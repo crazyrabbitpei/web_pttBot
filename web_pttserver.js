@@ -37,9 +37,10 @@ fs.exists(dir,function(exists){
 				fs.mkdir(dir,function(){
 						console.log("create:"+dir);
 				});
-				fs.writeFile('./ptt_data/'+board+'/log_web_article.txt', '');
+				//fs.writeFile('./ptt_data/'+board+'/log_web_article.txt', '');
 				fs.writeFile('./ptt_data/'+board+'/index.txt','1');
-		}
+	            index=1;
+        }
 		});
 
 //get new page
@@ -50,7 +51,7 @@ request({
 	var  get_page = $("div > div > div.action-bar > div.btn-group.pull-right > a:nth-child(2).btn.wide");
 	page = parseInt(S(get_page.attr('href')).between('index','.html').s)+1;
 	console.log("index:"+index+" page:"+page);
-	fs.appendFile('./ptt_data/'+board+'/log_web_article.txt',"index:"+index+" page:"+page+"\n");
+	//fs.appendFile('./ptt_data/'+board+'/log_web_article.txt',"index:"+index+" page:"+page+"\n");
 	fs.writeFile('./ptt_data/'+board+'/index.txt',page);
 	var i = index;
 	var tag = setInterval(function(){
@@ -75,14 +76,14 @@ function lookp(i,href){
 								 lookp(i,href);						
 							}
 							else if(response.statusCode!==200){
-									fs.appendFile('./ptt_data/'+board+'/log_web_article.txt', "--->["+i+"]page response:"+response.statusCode+'\n'+"uri:"+'https://www.ptt.cc/bbs/'+board+'/index'+i+'.html'+"\n");
+									//fs.appendFile('./ptt_data/'+board+'/log_web_article.txt', "--->["+i+"]page response:"+response.statusCode+'\n'+"uri:"+'https://www.ptt.cc/bbs/'+board+'/index'+i+'.html'+"\n");
 								if(response.statusCode===503){
 									lookp(i,href);
 								}
 							}
 							else{
 								var value = myBot.start(body,board,page,now);
-								fs.appendFile('./ptt_data/'+board+'/log_web_article.txt', "--->["+i+"]page response:"+response.statusCode+'\n'+"uri:"+'https://www.ptt.cc/bbs/'+board+'/index'+i+'.html'+"\n");
+								//fs.appendFile('./ptt_data/'+board+'/log_web_article.txt', "--->["+i+"]page response:"+response.statusCode+'\n'+"uri:"+'https://www.ptt.cc/bbs/'+board+'/index'+i+'.html'+"\n");
 							}
 					});
 }
