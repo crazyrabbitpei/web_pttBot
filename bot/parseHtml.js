@@ -13,10 +13,14 @@ var article_link = Array();
 
 try {
     service = JSON.parse(fs.readFileSync('./data/service'));
+    var idbip = service['idbip'];
+    var idbport = service['idbport'];
     var md5ip = service['md5ip'];
     var md5port = service['md5port'];
     var idip = service['idip'];
     var idport = service['idport'];
+    var apikey = service['apikey'];
+    var dbname = service['dbname'];
 
 }
 catch (err) {
@@ -26,6 +30,7 @@ process.exit(9);
 
 function convert(body,board,page,date,url){
 		var id,md5,title,author,thirdc,fourthc,time,content,reply_name,D,source,U,C,K,preview;
+        var record;
 		var content_temp;
 		var date = dateFormat(date, "yyyymmdd_HHMM");
 		getid(function(result){
@@ -98,7 +103,7 @@ function convert(body,board,page,date,url){
 							content_temp = S(content_temp).replaceAll('\n',' ').s;
 							content_temp = S(striptags(content_temp)).s;
 					getmd5(content_temp,function(result){
-								md5 = '@md5:'+result+'\n';
+								md5 = '@md:'+result+'\n';
 								//fs.appendFile('./ptt_data/'+board+'/'+date+'_ptt.rec', iconv.encode(md5,'utf-8'),function (err) {});
 							//TODO:preview's word if is chinese will not cut clear,so currently put nothing
 							//preview = '@P:'+S(content_temp).left(300).s+'\n';
@@ -118,10 +123,10 @@ function convert(body,board,page,date,url){
 							//reply = he.decode(reply);
 							//content = S(content).replaceAll('\n','<br>').s+'\n';
 
-								/*fs.appendFile('./ptt_data/'+board+'/'+date+'_ptt.rec', iconv.encode(D,'utf-8')+iconv.encode(source,'utf-8')+iconv.encode(U,'utf-8')+iconv.encode(C,'utf-8')+iconv.encode(K,'utf-8')+iconv.encode(time,'utf-8')+iconv.encode(title,'utf-8')+iconv.encode(preview,'utf-8')+iconv.encode(content,'utf-8'), function (err) {*/
-		
-								fs.appendFile('./ptt_data/'+board+'/'+date+'_ptt.rec',iconv.encode(id,'utf-8')+iconv.encode(md5,'utf-8')+iconv.encode(D,'utf-8')+iconv.encode(source,'utf-8')+iconv.encode(U,'utf-8')+iconv.encode(C,'utf-8')+iconv.encode(K,'utf-8')+iconv.encode(time,'utf-8')+iconv.encode(title,'utf-8')+iconv.encode(preview,'utf-8')+iconv.encode(content,'utf-8'), function (err) {
-						 		});
+                            record = iconv.encode(id,'utf-8')+iconv.encode(md5,'utf-8')+iconv.encode(D,'utf-8')+iconv.encode(source,'utf-8')+iconv.encode(U,'utf-8')+iconv.encode(C,'utf-8')+iconv.encode(K,'utf-8')+iconv.encode(time,'utf-8')+iconv.encode(title,'utf-8')+iconv.encode(preview,'utf-8')+iconv.encode(content,'utf-8');
+		                    putToDB(record);
+								/*fs.appendFile('./ptt_data/'+board+'/'+date+'_ptt.rec',iconv.encode(id,'utf-8')+iconv.encode(md5,'utf-8')+iconv.encode(D,'utf-8')+iconv.encode(source,'utf-8')+iconv.encode(U,'utf-8')+iconv.encode(C,'utf-8')+iconv.encode(K,'utf-8')+iconv.encode(time,'utf-8')+iconv.encode(title,'utf-8')+iconv.encode(preview,'utf-8')+iconv.encode(content,'utf-8'), function (err) {
+						 		});*/
 	
 					});
 		});
@@ -133,7 +138,7 @@ function getid(fin){
 		uri:"http://"+idip+":"+idport+"/id/get/number/",
 		timeout:10000
 	},function(error,res,body){
-		console.log(body);
+		//console.log(body);
 		fin(body);
 	});
 }
@@ -144,7 +149,18 @@ function getmd5(par,fin){
 		timeout:10000,
 		body:par
 	},function(error,res,body){
-		console.log(body);
+		//console.log(body);
 		fin(body);
 	});
+}
+function putToDB(record){
+	request({
+		method: 'POST',
+		uri:"http://"+idbip+":"+idbport+"/api/query/import/"+dbname+"/"+apikey,
+		timeout:10000,
+		body:record
+	},function(error,res,body){
+		//console.log(body+"uri:"+"http://"+idbip+":"+idbport+"/api/query/import/"+dbname+"/"+apikey);
+	});
+    
 }
