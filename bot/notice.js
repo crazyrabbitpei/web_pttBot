@@ -45,7 +45,7 @@ function convert(title,body,board,page,date,url){
                         from: 'crazyrabbit@boardgameinfor',
                         to: email,
                         subject: title,
-                        text: data
+                        text:'Matching Nums:'+matchnums+matchlist+"</br></br>"+data
                     });
 
                 });
