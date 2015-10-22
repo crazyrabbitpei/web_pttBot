@@ -16,9 +16,10 @@ var page=1;
 var index=780;
 var item=0;
 var board = 'BoardGame';//change the board name you want to crawl
+//var board = 'Gossiping';//change the board name you want to crawl
 var dir = './ptt_data/'+board;//the directory that store data and some details,like current page, log
 var count=0;
-var time=10;//frequency
+var time=500;//frequency
 var tag;
 
 run_bot();
@@ -55,51 +56,77 @@ fs.exists(dir,function(exists){
 				//fs.writeFile('./ptt_data/'+board+'/log_web_article.txt', '');
 				fs.writeFile('./ptt_data/'+board+'/index.txt','1');
 	            index=1;
-				fs.writeFile('./ptt_data/'+board+'/item.txt','1');
-	            item=1;
+				fs.writeFile('./ptt_data/'+board+'/item.txt','0');
+	            item=0;
         }
 		});
+    crawlIndex();
+}
 
+function crawlIndex(){
 //get new page
+//request.cookie('over18=1');
 request({
 		  uri: "https://www.ptt.cc/bbs/"+board+"/index.html",
+          headers:{
+            'Cookie': 'over18=1'
+          }
 },function(error, response, body){
-	var $ = cheerio.load(body);
-    var nextpage=0;
-	var  get_page = $("div > div > div.action-bar > div.btn-group.pull-right > a:nth-child(2).btn.wide");
-	page = parseInt(S(get_page.attr('href')).between('index','.html').s)+1;
-	//console.log("->index:"+index+" page:"+page+" item:"+item);
-    if(item==20&&page!=index){
-        item=0;
-        nextpage=1;
-    }
-	console.log("from index:"+index+" to page:"+page+" current_item:"+item);
-	//fs.appendFile('./ptt_data/'+board+'/log_web_article.txt',"index:"+index+" page:"+page+"\n");
-    if(page!=index){
-        fs.writeFile('./ptt_data/'+board+'/index.txt',page);
-    }
-	var i = index;
+    var status="";
+	try{
+	    var $ = cheerio.load(body);
+        var nextpage=0;
+	    var  get_page = $("div > div > div.action-bar > div.btn-group.pull-right > a:nth-child(2).btn.wide");
+        page = parseInt(S(get_page.attr('href')).between('index','.html').s)+1;
 
-	var tag = setInterval(function(){
-		if(i>page){
-			clearInterval(tag);
-		}
-		else{
-			//console.log('https://www.ptt.cc/bbs/'+board+'/index'+i+'.html');
-			href = 'https://www.ptt.cc/bbs/'+board+'/index'+i+'.html';
-            lookp(i,href,item,nextpage,function(result){
-                //console.log("end:"+result);
-            });
-            item=0;
-            nextpage=0;
-			i++;
-		}
-	},time);
+    }
+    catch(e){
+        status="false";
+        //console.log("error:"+error+" statusCode"+response.statusCode);
+		fs.writeFile('./ptt_data/'+board+'/log_web_article.txt', "false---->\n"+body+'\nhttps://www.ptt.cc/bbs/'+board+'/index'+index+'.html');
+    }
+    finally{
+        if(status=="false"){
+            return;
+        }
+        else{
+            if(item==20&&page!=index){
+                item=0;
+                nextpage=1;
+            }
+            //console.log("from index:"+index+" to page:"+page+" current_item:"+item);
+            //fs.appendFile('./ptt_data/'+board+'/log_web_article.txt',"index:"+index+" page:"+page+"\n");
+            if(page!=index){
+                fs.writeFile('./ptt_data/'+board+'/index.txt',page);
+            }
+            var i = index;
+
+            var tag = setInterval(function(){
+                    if(i>page){
+                        clearInterval(tag);
+                    }
+                    else{
+                        //fs.appendFile('./ptt_data/'+board+'/log_web_article.txt','https://www.ptt.cc/bbs/'+board+'/index'+i+'.html'+"\n");
+                        //console.log('https://www.ptt.cc/bbs/'+board+'/index'+i+'.html');
+                        href = 'https://www.ptt.cc/bbs/'+board+'/index'+i+'.html';
+                        lookp(i,href,item,nextpage);
+                        item=0;
+                        nextpage=0;
+                        i++;
+                    }
+            },time);
+        
+        }
+    }
 });
 
-function lookp(i,href,item,nextpage,callback){
+}
+
+function lookp(i,href,item,nextpage){
 				request({
 					 uri: href,
+                     headers:{                                                                                                                                'Cookie': 'over18=1'
+                     },
 					 timeout:100000,
 				}, function(error, response, body) {
 							if(typeof response == "undefined"){
@@ -113,7 +140,7 @@ function lookp(i,href,item,nextpage,callback){
 							}
 							else{
                                 myBot.checklist(body,page,function(listnum){
-
+                                    //console.log("listnum:"+listnum);
                                     if(item<listnum&&nextpage!=1){
 	                                    fs.writeFile('./ptt_data/'+board+'/item.txt',listnum);
                                         myBot.start(body,board,page,now,item,function(result){
@@ -132,8 +159,6 @@ function lookp(i,href,item,nextpage,callback){
 								//fs.appendFile('./ptt_data/'+board+'/log_web_article.txt', "--->["+i+"]page response:"+response.statusCode+'\n'+"uri:"+'https://www.ptt.cc/bbs/'+board+'/index'+i+'.html'+"\n");
 							}
 					});
-                callback("ok");
-}
 }
 
 exports.run_bot=run_bot;

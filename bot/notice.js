@@ -12,7 +12,7 @@ var nodemailer = require('nodemailer');
 var transporter = nodemailer.createTransport()
 var page_link;
 var article_link = Array();
-
+/*
 try {
     service = JSON.parse(fs.readFileSync('./data/service'));
     var idbip = service['idbip'];
@@ -29,7 +29,7 @@ catch (err) {
     console.error(err);
 process.exit(9);
 }
-
+*/
 function convert(title,body,board,page,date,url){
 		var id,md5,title,author,thirdc,fourthc,time,content,reply_name,D,source,U,C,K,preview;
         var record;
@@ -43,9 +43,9 @@ function convert(title,body,board,page,date,url){
                     //fs.appendFile('./ptt_data/'+board+'/'+date+'_ptt.rec',"Matching Nums:"+matchnums+matchlist+"\n"+data+"---------------------------------------\n");
                     transporter.sendMail({
                         from: 'crazyrabbit@boardgameinfor',
-                        to: email,
+                        to: 'willow111333@gmail.com',
                         subject: title,
-                        text:'Matching Nums:'+matchnums+matchlist+"</br></br>"+data
+                        text:'Matching Nums:'+matchnums+matchlist+"\n"+data
                     });
 
                 });
@@ -85,6 +85,7 @@ function findBoardGame(title,body,callback){
             }
             else if(games.length==game_matchnums){//all match
                 callback(2,game_matchnums,0,matchlist);
+                //console.log("["+i+"]games:"+games[i]);
             }
             else if(match<=game_matchnums){//match at least [match] 
                 callback(1,game_matchnums,0,matchlist);
