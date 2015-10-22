@@ -7,9 +7,9 @@ var moment = require('moment');
 var dateFormat = require('dateformat');
 var request = require('request');
 var striptags = require('striptags');
-var deleteTag = require('/home/crazyrabbit/idbapi/tool/deleteTag.js');
-var nodemailer = require('nodemailer');
-var transporter = nodemailer.createTransport()
+var deleteTag = require('./deleteTag');
+//var nodemailer = require('nodemailer');
+//var transporter = nodemailer.createTransport()
 var page_link;
 var article_link = Array();
 /*
@@ -32,9 +32,10 @@ process.exit(9);
 */
 function convert(title,body,board,page,date,url){
 		var id,md5,title,author,thirdc,fourthc,time,content,reply_name,D,source,U,C,K,preview;
-        var record;
+		var record;
 		var content_temp;
 		var date = dateFormat(date, "yyyymmdd_HHMM");
+	/*
         findBoardGame(title,body,function(game,matchnums,type,matchlist){
             if(game!=-1&&type!=-1){
                 deleteTag.delhtml(body,function(data){
@@ -52,6 +53,7 @@ function convert(title,body,board,page,date,url){
 
             }
         });
+	*/
 }
 exports.convert = convert;
 
