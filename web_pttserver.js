@@ -24,17 +24,22 @@ run_bot("peipei",function(result){
 
 function run_bot(owner,fin){
     //read service information
-    service = JSON.parse(fs.readFileSync('./service/'+owner+'/service'));
-    boards = service['boards'];
-    dir = service['data_dir'];
-    interval = service['intervalPer'];
-    //create folder or use existing
-    for(var i=0;i<boards.length;i++){
-        createDir(owner,boards[i].name,function(result){
-            //console.log("All dir created done");
-        });
-    }
-    fin("ok");
+	try{
+		service = JSON.parse(fs.readFileSync('./service/'+owner+'/service'));
+		boards = service['boards'];
+		dir = service['data_dir'];
+		interval = service['intervalPer'];
+		//create folder or use existing
+		for(var i=0;i<boards.length;i++){
+			createDir(owner,boards[i].name,function(result){
+				//console.log("All dir created done");
+			});
+		}
+		fin("ok");
+	}
+	catch(e){
+		console.log("Please create service file ./service/{yourname}/service");
+	}
 }
 function createDir(owner,board,fin){
     try{
