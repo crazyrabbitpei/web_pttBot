@@ -7,28 +7,41 @@ var moment = require('moment');
 var dateFormat = require('dateformat');
 var request = require('request');
 var striptags = require('striptags');
+var deletetag = require('./deleteTag');
 
-var page_link;
-var article_link = Array();
+var old_date="";
+var p_board="";
+function convert(title,body,board,url,owner){
+	var date = dateFormat(new Date(), "yyyymmdd");
+    var record="";
+    if(date!=old_date&&p_board!=board){
+        old_date = date;
+        p_board = board;
+        record = "@gaisR\n";
+    }
+    title = title.replace(/\n/g,"");
+    title = title.replace(/\s/g,"");
 
-try {
-    service = JSON.parse(fs.readFileSync('./data/service'));
-    var idbip = service['idbip'];
-    var idbport = service['idbport'];
-    var md5ip = service['md5ip'];
-    var md5port = service['md5port'];
-    var idip = service['idip'];
-    var idport = service['idport'];
-    var apikey = service['apikey'];
-    var dbname = service['dbname'];
-
+    record += "@\n@title:"+title+"\n";
+    record += "@source:ptt/"+board+"\n";
+    record += "@url:"+url+"\n";
+    toGais(record,body,date,owner,board,function(){
+    });
 }
-catch (err) {
-    console.error(err);
-process.exit(9);
-}
+function toGais(record,content,date,owner,board,fin){
+   deletetag.delhtml(content,function(result){
+        time = S(result).between("時間","\n");
+	    time = he.decode(time);
+        result = S(result).between(time,"※ 發信站: 批踢踢實業坊(ptt.cc)");
+	    result = he.decode(result);
+        record +="@time:"+time+"\n";
+        record += "@body:"+result+"\n";
 
-function convert(body,board,page,date,url){
+        fs.appendFile("./ptt_data/"+owner+"/"+board+"/"+date,record,function(){
+        });
+   });
+}
+function convert1(title,body,board,url){
 		var id,md5,title,author,thirdc,fourthc,time,content,reply_name,D,source,U,C,K,preview;
         var record;
 		var content_temp;
