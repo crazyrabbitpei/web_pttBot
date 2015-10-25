@@ -35,25 +35,6 @@ function convert(title,body,board,page,date,url){
     var record;
     var content_temp;
     var date = dateFormat(date, "yyyymmdd_HHMM");
-    /*
-       findBoardGame(title,body,function(game,matchnums,type,matchlist){
-       if(game!=-1&&type!=-1){
-       deleteTag.delhtml(body,function(data){
-       data = S(data).between("作者").s;
-       data = he.decode(data);
-    //fs.appendFile('./ptt_data/'+board+'/'+date+'_ptt.rec',"Matching Nums:"+matchnums+matchlist+"\n"+data+"---------------------------------------\n");
-    transporter.sendMail({
-from: 'crazyrabbit@boardgameinfor',
-to: 'willow111333@gmail.com',
-subject: title,
-text:'Matching Nums:'+matchnums+matchlist+"\n"+data
-});
-
-});
-
-}
-});
-*/
     }
     exports.convert = convert;
 
