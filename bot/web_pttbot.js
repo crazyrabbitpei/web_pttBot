@@ -102,7 +102,7 @@ function start(current_page,body,board,page,owner,timeper,callback){
                 }
                 else{
                     fs.appendFile('./ptt_data/'+owner+'/'+board+'/articlelist.txt',"["+current_page+"] "+linc+" grap[:"+board+"] href:"+href+"\n");
-                    look(href,text,"0",board,owner);
+                    look(href,text,"0",board,owner,linc);
                     linc++;
                     if(linc>=article_link.length){
                         clearInterval(terid);
@@ -120,9 +120,11 @@ exports.checklist=checklist;
 exports.start = start;
 
 
-function look(href,text,value,board,owner){
+function look(href,text,value,board,owner,linc){
     var web="https://www.ptt.cc";
     var url = web+href;
+    var date;
+    var againTime = 10000+(linc*1000);
     request({
         uri:url,
         headers:{                                                                                                                                'Cookie': 'over18=1'
@@ -130,7 +132,15 @@ function look(href,text,value,board,owner){
         timeout:100000,
     },function(error,response,body){
         if(typeof response == "undefined"){
-            look(href,text,"503",board,owner);
+            setTimeout(
+                function(){
+                    date = new Date();
+                    //fs.appendFile('./ptt_data/'+owner+'/'+board+'/tryagain_link',"t:["+date+"]"+href+"\n");
+                    look(href,text,"503",board,owner,linc);
+                },
+                againTime
+            )
+
         }
         else if(response.statusCode!==200){
             if(response.statusCode===503){
@@ -140,7 +150,14 @@ function look(href,text,value,board,owner){
                 else{
                     //fs.appendFile('./ptt_data/'+board+'/log_web_article.txt', "\trepeteb["+num+"]bot response:"+response.statusCode+'\n'+"\ttext:"+text+"\n"+"\thref:"+web+href+"\n");
                 }
-                look(href,text,"503",board,owner);
+                setTimeout(
+                    function(){
+                        date = new Date();
+                        //fs.appendFile('./ptt_data/'+owner+'/'+board+'/tryagain_link',"t:["+date+"]"+href+"\n");
+                        look(href,text,"503",board,owner,linc);
+                    },
+                    againTime
+                )
             }
             else{
                 //fs.appendFile('./ptt_data/log_web_article.txt', "\trepetenotok["+num+"]bot response:"+response.statusCode+'\n'+"\ttext:"+text+"\n"+"\thref:"+web+href+"\n");
@@ -153,7 +170,8 @@ function look(href,text,value,board,owner){
             else{
                 //fs.appendFile('./ptt_data/log_web_article.txt', "\tonceok[o]["+num+"]bot response:"+response.statusCode+'\n'+"\ttext:"+text+"\n"+"\thref:"+web+href+"\n");
             }
-            //fs.appendFile('./ptt_data/'+board+'/web_article.txt',"\t"+iconv.encode(body,'utf-8'),function (err){});
+            date = new Date();
+            //fs.appendFile('./ptt_data/'+owner+'/'+board+'/tryagain_link',"=>okt:["+date+"]"+href+"\n");
             iconv.encode(body,'utf-8');
             parseHtml.convert(text,body,board,url,owner);
             return 200;

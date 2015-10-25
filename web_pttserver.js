@@ -12,18 +12,23 @@ var now = new Date();
 var link_count=0;
 var dir;
 var interval;
+var againTime;
+var nextBoardt;
+var startnum=0;
 
-run_bot("peipei",function(name,bname,index,item){
+run_bot("peipei",startnum,function(name,bname,index,item){
     if(name==0||bname==0){
         console.log("run_bot error");   
     }
     else{
         console.log("name:"+name+" bname:"+bname+" index:"+index);
-        crawlIndex(name,bname,index,item);
+        crawlIndex(name,bname,index,item,function(){
+            console.log("done");           
+        });
     }
 });
 
-function run_bot(owner,fin){
+function run_bot(owner,snum,fin){
     //read service information
     try{
         var boards;
@@ -31,6 +36,8 @@ function run_bot(owner,fin){
         boards = service['boards'];
         dir = service['data_dir'];
         interval = service['intervalPer'];
+        againTime = parseInt(service['againTime']);
+        nextBoardt = parseInt(service['nextBoardt']);
         //create folder or use existing
         for(var i=0;i<boards.length;i++){
             createDir(owner,boards[i].name,function(name,bname,index,item){
@@ -38,10 +45,15 @@ function run_bot(owner,fin){
                 fin(name,bname,index,item);
             });
         }
+        /*
+           createDir(owner,boards[snum].name,function(name,bname,index,item){
+           fin(name,bname,index,item);
+           });
+           */
     }
     catch(e){
         console.log("[error] run_bot:"+e);
-        fin(0,0,0,0);
+        fin(0,0,0,0,0);
     }
 }
 function createDir(owner,board,fin){
@@ -174,18 +186,34 @@ function lookp(current_page,href,page,board,owner,timeper){
         timeout:100000,
     }, function(error, response, body) {
         if(typeof response == "undefined"){
-            lookp(current_page,href,page,board,owner,timeper);
+            //fs.appendFile('./ptt_data/'+owner+'/'+board+'/tryagain',href+"\n");
+            setTimeout(
+                function(){
+                    var date = new Date();
+                    //fs.appendFile('./ptt_data/'+owner+'/'+board+'/tryagain_web',"t:["+date+"]"+href+"\n");
+                    lookp(current_page,href,page,board,owner,timeper);
+                },
+                againTime+(page*1000)
+            )
         }
         else if(response.statusCode!==200){
             //fs.appendFile('./ptt_data/'+owner+'/'+board+'/log_web_article.txt', "--->["+current_page+"]page response:"+response.statusCode+'\n'+"uri:"+'https://www.ptt.cc/bbs/'+board+'/index'+current_page+'.html'+"\n");
             if(response.statusCode===503){
-                lookp(current_page,href,page,board,owner,timeper);
+                setTimeout(
+                    function(){
+                        var date = new Date();
+                        //fs.appendFile('./ptt_data/'+owner+'/'+board+'/tryagain_web',"t:["+date+"]"+href+"\n");
+                        lookp(current_page,href,page,board,owner,timeper);
+                    },
+                    againTime+(page*1000)
+                )
             }
         }
         else{
             //myBot.checklist(body,page,function(listnum){
-
             myBot.start(current_page,body,board,page,owner,timeper,function(cnt){
+                var date = new Date();
+                //fs.appendFile('./ptt_data/'+owner+'/'+board+'/tryagain_web',"=>ok:["+date+"]"+href+"\n");
                 link_count +=cnt;
                 //console.log("now links:"+link_count);
             });
