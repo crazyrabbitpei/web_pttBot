@@ -1,5 +1,4 @@
 var myBot = require('./bot/web_pttbot.js');
-var myMoudle = require('./run');
 var request = require('request');
 var http = require('http');
 var fs = require('graceful-fs');
@@ -12,32 +11,29 @@ var now = new Date();
 
 var link_count=0;
 
-var dir = myMoudle.dir;
-var interval = myMoudle.interval;
-var againTime = myMoudle.againTime;
-var nextBoardt = myMoudle.nextBoardt;
-var startnum = myMoudle.startnum;
-/*
-start();
-function start(){
-    run_bot("peipei",startnum,function(name,bname,index,item){
-        if(name==0||bname==0){
-            console.log("run_bot error");   
-        }
-        else{
-            console.log("name:"+name+" bname:"+bname);
-            crawlIndex(name,bname,index,item,function(){
-                console.log("done");           
-            });
-        }
-    });
-}
+var dir;
+var interval;
+var againTime;
+var nextBoardt;
+var startnum;
+
+run_bot("peipei",startnum,function(name,bname,index,item,lastdate){
+    if(name==0||bname==0){
+        console.log("run_bot error");   
+    }
+    else{
+        console.log("name:"+name+" bname:"+bname);
+        crawlIndex(name,bname,index,item,lastdate,function(){
+            console.log("done");           
+        });
+    }
+});
 
 function run_bot(owner,snum,fin){
     //read service information
     try{
         var boards;
-        service = JSON.parse(fs.readFileSync('./service/'+owner+'/service'));
+        service = JSON.parse(fs.readFileSync('./service/'+owner+'/service1'));
         boards = service['boards'];
         dir = service['data_dir'];
         interval = service['intervalPer'];
@@ -45,23 +41,19 @@ function run_bot(owner,snum,fin){
         nextBoardt = parseInt(service['nextBoardt']);
         //create folder or use existing
         for(var i=0;i<boards.length;i++){
-            createDir(owner,boards[i].name,function(name,bname,index,item){
+            createDir(owner,boards[i].name,function(name,bname,index,item,lastdate){
                 //console.log(name+"/"+bname+" dir created done"+" index:"+index+" item:"+item);
-                fin(name,bname,index,item);
+                fin(name,bname,index,item,lastdate);
             });
         }
-        //createDir(owner,boards[snum].name,function(name,bname,index,item){
-        //fin(name,bname,index,item);
-        //});
     }
     catch(e){
         console.log("[error] run_bot:"+e);
-        fin(0,0,0,0,0);
+        fin(0,0,0,0,0,0);
     }
 }
 function createDir(owner,board,fin){
-    var index;
-    var item;
+    var index,item,lastdate;
     var status=0;
     try{
         fs.exists(dir+"/"+owner+"/"+board,function(exists){
@@ -83,8 +75,16 @@ function createDir(owner,board,fin){
                             }
                             else{
                                 item = parseInt(data);
-                                //console.log("item:"+item);
-                                fin(owner,board,index,item);
+                                fs.readFile(dir+'/'+owner+'/'+board+'/lastdate.txt',function read(err,data){
+                                    if(err){
+                                        throw err;
+                                    }
+                                    else{
+                                        lastdate = data;
+                                        //console.log("lastdate:"+lastdate);
+                                        fin(owner,board,index,item,lastdate);
+                                    }
+                                });
                             }
                         });
                     }
@@ -97,6 +97,7 @@ function createDir(owner,board,fin){
             else{
                 index=0;
                 item=0;
+                lastdate=0;
                 console.log("no "+ dir+"/"+owner+"/"+board);
                 fs.mkdir(dir,function(){
                     console.log("create:"+dir);
@@ -106,7 +107,8 @@ function createDir(owner,board,fin){
                             console.log("create:"+dir+"/"+owner+"/"+board);
                             fs.writeFile(dir+'/'+owner+"/"+board+'/index.txt','0');
                             fs.writeFile(dir+'/'+owner+"/"+board+'/item.txt','0');
-                            fin(owner,board,index,item);
+                            fs.writeFile(dir+'/'+owner+"/"+board+'/lastdate.txt','0');
+                            fin(owner,board,index,item,lastdate);
                         });	
                     });	
                 });
@@ -116,7 +118,7 @@ function createDir(owner,board,fin){
     catch(e){
         console.log("[error] createDir:"+e);
         status=1;
-        fin(0,0,0,0);
+        fin(0,0,0,0,0);
 
     }
     //finally{
@@ -130,7 +132,6 @@ function createDir(owner,board,fin){
     //}
     //} 
 }
-*/
 function crawlIndex(name,board,index,item,lastdate)
 {
     //get new page
@@ -146,13 +147,15 @@ function crawlIndex(name,board,index,item,lastdate)
             var nextpage=0;
             var  get_page = $("div > div > div.action-bar > div.btn-group.pull-right > a:nth-child(2).btn.wide");
             var page = parseInt(S(get_page.attr('href')).between('index','.html').s)+1;
+            /*
             if(page<index){
                 console.log("PTT server error");
                 return;
             }
-            else{
+            */
+            //else{
                 fs.writeFile('./ptt_data/'+name+'/'+board+'/index.txt', page);
-            }
+            //}
         }
         catch(e){
             status="false";
@@ -163,7 +166,6 @@ function crawlIndex(name,board,index,item,lastdate)
             }
             else{
                 console.log("lastdate:"+lastdate+" index:"+index+" item:"+item+" total page:"+page);
-                var url="";
                 var i = page;
                 var tag = setInterval(function(){
                     if(lastdate==0){
@@ -174,8 +176,8 @@ function crawlIndex(name,board,index,item,lastdate)
                             return;
                         }
                     }
-
-                    url = "https://www.ptt.cc/bbs/"+board+"/index"+i+".html";
+                    
+                    var url = "https://www.ptt.cc/bbs/"+board+"/index"+i+".html";
                     if(index!=i){
                         lookp(lastdate,i,url,page,19,board,name,interval,function(reach){
                             if(reach==1){
@@ -238,17 +240,19 @@ function lookp(lastdate,current_page,href,end_page,item,board,owner,timeper,fin)
         }
         else{
             myBot.checklist(body,end_page,function(listnum){
+                //console.log("new item num:"+listnum);
                 console.log("current_page:"+current_page+" end_page:"+end_page);
-                
-                if(current_page>=end_page){
-                    fs.writeFile('./ptt_data/'+owner+'/'+board+'/item.txt',listnum);
-                }
                 /*
-                else if(current_page==end_page&&listnum==item){
-                    console.log("no news");
+                if(current_page==end_page&&listnum==item){
+                    //console.log("no news");
+                    //fin(1);
                     //return;
                 }
                 */
+                if(current_page>=end_page){
+                    fs.writeFile('./ptt_data/'+owner+'/'+board+'/item.txt',listnum);
+                }
+
                 myBot.start(lastdate,current_page,item,body,board,end_page,owner,timeper,function(cnt,reach){
                     var date = new Date();
                     link_count +=cnt;

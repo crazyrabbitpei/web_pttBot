@@ -1,4 +1,4 @@
-var fs = require('fs');
+var fs = require('graceful-fs');
 var iconv = require('iconv-lite');
 var cheerio = require("cheerio");
 var S = require('string');
@@ -11,7 +11,7 @@ var deletetag = require('./deleteTag');
 
 var old_date="";
 var p_board="";
-function convert(title,body,board,url,owner){
+function convert(lastdate,title,body,board,url,owner,linc,linc_length,current_page,end_page,fin){
     var date = dateFormat(new Date(), "yyyymmdd");
     var record="";
     if(date!=old_date&&p_board!=board){
@@ -25,18 +25,34 @@ function convert(title,body,board,url,owner){
     record += "@\n@title:"+title+"\n";
     record += "@source:ptt/"+board+"\n";
     record += "@url:"+url+"\n";
-    toGais(record,body,date,owner,board,function(){
+    toGais(lastdate,record,body,date,owner,board,linc,linc_length,current_page,end_page,function(reach){
+            fin(reach,owner,board,current_page,linc,linc_length,url);
     });
 }
-function toGais(record,content,date,owner,board,fin){
+function toGais(lastdate,record,content,date,owner,board,linc,linc_length,current_page,end_page,fin){
     var timeS=0;
     var bodyS=0;
+
     deletetag.delhtml(content,function(result){
         var resulttemp="";
         var time="";
-        time = S(result).between("時間","\n");
-        time = he.decode(time);
-        if(time==""||time=="\t\t"){
+        //time = S(result).between("時間","\n");
+        var find_time = result.match(/\b(?:(?:Mon)|(?:Tues?)|(?:Wed(?:nes)?)|(?:Thur?s?)|(?:Fri)|(?:Sat(?:ur)?)|(?:Sun))(?:day)?\b[:\-,]?\s*[a-zA-Z]{3,9}\s+\d{1,2}\s*(\d{2}):(\d{2}):(\d{2}),?\s*\d{4}/);
+        if(find_time!=null){
+            time = find_time[0];
+            time = he.decode(time);
+        }
+        /*if the web format is not regular(doesn't contain title,author,time...),but has "時間" in body, will fetch wrong 
+        time.Sometimes, fetched comment's message
+            ex:推 luuluu: 宋出來就是休息時間 都在懷才不遇倒垃圾以為觀眾是心理醫 12/26 16:14
+        will fetch "12/26 16:14", but after formating by Date, it'll convert to 2001 year, writing following to avoid 
+        this situation.
+        */
+        if(time.indexOf("/")!=-1){
+            time="";
+        }
+        /*------------------------*/
+        if(time==""||time=="\t\t"||time==null){
             time = S(result).between("發信站","轉信站");//https://www.ptt.cc/bbs/movie/M.1073844095.A.html
             time = he.decode(time);
             if(time==""||time=="\t\t"){
@@ -67,25 +83,64 @@ function toGais(record,content,date,owner,board,fin){
         }
 
         if(bodyS==0&&timeS==1){//no title,time, matching body end
-            time = "(none)";
+            time = 0;
             //time = he.decode(time);
         }
         else if(bodyS==1&&timeS==1){//no title,time,and no matching body end
-            time = "(none)";
+            time = 0;
             resulttemp = result;
             //time = he.decode(time);
         }
         else if(bodyS==1&&timeS==0){//no matching body end, has time
             resulttemp = result;
         }
+        //record last timestamp
+        
+        //console.log("==>linc:"+linc+" linc_length:"+linc_length+" current_page:"+current_page+" end_page:"+end_page);
+        if(linc==linc_length-1&&current_page==end_page){
+            fs.writeFile('./ptt_data/'+owner+'/'+board+'/lastdate.txt',time);
+        }
+        var s_lastdate=0,s_time=0;
+        if(lastdate!=0){
+            lastdate = new Date(lastdate);
+            s_lastdate = lastdate.toString();
+            s_lastdate = s_lastdate.split(" ");
+            s_lastdate = parseInt(s_lastdate[3]);
+        }
 
-        result = he.decode(resulttemp);
-        record +="@time:"+time+"\n";
-        record += "@body:"+result+"\n";
+        if(time!=0){
+            temp_time = new Date(time);
+            s_time = temp_time.toString();
+            s_time = s_time.split(" ");
+            s_time = parseInt(s_time[3]);
+        }
+        else{
+            temp_time = 0;
+        }
 
-        fs.appendFile("./ptt_data/"+owner+"/"+board+"/"+date,record,function(){
-        });
+        var interval = s_lastdate - s_time;
+        if(time!=0&&temp_time<=lastdate&&lastdate!=0&&interval==0){//special case https://www.ptt.cc/bbs/Gossiping/M.1447840600.A.074.html
+            console.log(temp_time+" is reach to or smaller then lastdate:"+lastdate);
+            result = he.decode(resulttemp);
+            record +="@time:"+temp_time+"\n";
+            record += "@body:"+result+"\n";
+
+            fs.appendFile("./ptt_data/"+owner+"/"+board+"/"+date+"_stop",record,function(){
+            });
+            fin(1);
+        }
+        else{
+            //console.log(time+" is bigger then lastdate:"+lastdate);
+            result = he.decode(resulttemp);
+            record +="@time:"+temp_time+"\n";
+            record += "@body:"+result+"\n";
+
+            fs.appendFile("./ptt_data/"+owner+"/"+board+"/"+date,record,function(){
+            });
+            fin(0);
+        }
     });
+
 }
 function convert1(title,body,board,url){
     var id,md5,title,author,thirdc,fourthc,time,content,reply_name,D,source,U,C,K,preview;
