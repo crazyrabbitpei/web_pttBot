@@ -103,7 +103,7 @@ function start(lastdate,current_page,citem,body,board,page,owner,timeper,callbac
                     }
                 }
                 else{
-                    look(lastdate,href,text,"0",board,owner,linc,article_link.length,current_page,endpage,function(reach,temp_owner,temp_board,temp_current_page,temp_linc,temp_linc_length,temp_href){
+                    look(0,lastdate,href,text,"0",board,owner,linc,article_link.length,current_page,endpage,function(reach,temp_owner,temp_board,temp_current_page,temp_linc,temp_linc_length,temp_href){
                         if(reach==1){
                             clearInterval(terid);
                             callback(temp_linc_length,reach);
@@ -134,11 +134,12 @@ exports.checklist=checklist;
 exports.start = start;
 
 
-function look(lastdate,href,text,value,board,owner,linc,linc_length,current_page,end_page,fin){
+function look(check,lastdate,href,text,value,board,owner,linc,linc_length,current_page,end_page,fin){
     var web="https://www.ptt.cc";
     var url = web+href;
     var date;
-    var againTime = 10000+(linc*1000);
+    //var againTime = (10000*linc)+1000;
+    var againTime = 1000+(linc*100);
     request({
         uri:url,
         headers:{                                                                                                                                'Cookie': 'over18=1'
@@ -146,15 +147,16 @@ function look(lastdate,href,text,value,board,owner,linc,linc_length,current_page
         timeout:100000,
     },function(error,response,body){
         if(typeof response == "undefined"){
-            setTimeout(
-                function(){
-                    date = new Date();
-                    //fs.appendFile('./ptt_data/'+owner+'/'+board+'/tryagain_link',"t:["+date+"]"+href+"\n");
-                    look(lastdate,href,text,"503",board,owner,linc,linc_length,current_page,end_page,fin);
-                },
-                againTime+(linc*1000)
-            )
-
+		if(check<30){
+			setTimeout(
+				function(){
+				date = new Date();
+				//fs.appendFile('./ptt_data/'+owner+'/'+board+'/tryagain_link',"t:["+date+"]"+href+"\n");
+				look(check+1,lastdate,href,text,"503",board,owner,linc,linc_length,current_page,end_page,fin);
+				},
+				againTime
+			)
+		}
         }
         else if(response.statusCode!==200){
             if(response.statusCode===503){
@@ -164,14 +166,16 @@ function look(lastdate,href,text,value,board,owner,linc,linc_length,current_page
                 else{
                     //fs.appendFile('./ptt_data/'+board+'/log_web_article.txt', "\trepeteb["+num+"]bot response:"+response.statusCode+'\n'+"\ttext:"+text+"\n"+"\thref:"+web+href+"\n");
                 }
+		if(check<30){
                 setTimeout(
                     function(){
                         date = new Date();
                         //fs.appendFile('./ptt_data/'+owner+'/'+board+'/tryagain_link',"t:["+date+"]"+href+"\n");
-                        look(lastdate,href,text,"503",board,owner,linc,linc_length,current_page,end_page,fin);
+                        look(check+1,lastdate,href,text,"503",board,owner,linc,linc_length,current_page,end_page,fin);
                     },
-                    againTime+(linc*1000)
+                    againTime
                 )
+		}
             }
             else{
                 //fs.appendFile('./ptt_data/log_web_article.txt', "\trepetenotok["+num+"]bot response:"+response.statusCode+'\n'+"\ttext:"+text+"\n"+"\thref:"+web+href+"\n");

@@ -2,37 +2,70 @@ var web_pttserver = require('./web_pttserver.js');
 var CronJob = require('cron').CronJob;
 var fs = require('graceful-fs');
 var HashMap = require('hashmap');
+var Promise = require('promise');
 
 var board_info = new HashMap();
-var boards_list = [];
+
 var dir;
-var interval;
+var page_interval;
+var article_interval;
 var againTime;
 var nextBoardt;
 var startnum=0;
 var job=0;
 
+var r_cnt=[],r_name=[],r_bname=[],r_index=[],r_item=[],r_lastdate=[];
 
-run_bot("peipei",startnum,function(cnt,name,bname,index,item,lastdate){
-    if(name==0||bname==0){
-        console.log("run_bot error");   
-    }
-    else{
-        console.log("NO."+cnt+" =>name:"+name+" bname:"+bname);
-        //boards_list.push(bname);
+//run_bot("peipei",startnum,function(cnt,name,bname,index,item,lastdate){
+run_bot("peipei",startnum,function(result){
+	var i,j,k;
+	var parts = result.split(",");
+	var info;
+
+	for(i=0;i<parts.length-1;i++){
+		info = parts[i].split("~");	
+		if(info[0]==""|info[1]==""||info[2]==""||info[3]==""||info[4]==""||info[5]==""){
+			console.log("[error] NO."+cnt+" =>name:"+name+" bname:"+bname);
+			continue;
+		}
+		r_cnt.push(info[0]);
+		r_name.push(info[1]);
+		r_bname.push(info[2]);
+		r_index.push(info[3]);
+		r_item.push(info[4]);
+		r_lastdate.push(info[5]);
+
+
+	}
+	for(i=0;i<r_cnt.length;i++){
+		console.log("NO."+r_cnt[i]+" =>name:"+r_name[i]+" bname:"+r_bname[i]);
+	}
+	
+        setBot(0,r_name[0],r_bname[0],r_index[0],r_item[0],r_lastdate[0]);
+    //else{
+        //console.log("NO."+cnt+" =>name:"+name+" bname:"+bname);
         //console.log("length:"+boards.length+"=>"+boards[boards.length-1]);
-        setBot(0,name,bname,index,item,lastdate);
-    }
+        //setBot(cnt,name,bname,index,item,lastdate);
+    //}
 });
 
 
 function setBot(cnt,name,bname,index,item,lastdate){
-    //new CronJob('59 37,59 4,12,20,23,00 * * *', function() {
-    new CronJob('00 25 22 * * *', function() {
-        web_pttserver.crawlIndex(name,bname,index,item,lastdate,function(){
-            console.log(" name:"+bname+" done");
+        web_pttserver.crawlIndex(cnt,name,bname,index,item,lastdate,function(board,count,t_name,t_index,t_item,t_lastdate){
+		console.log("=>name:"+board+" done");
+		if(board==503||board=="503"){
+			console.log("["+board+"]"+count+","+t_name+","+bname+","+t_index+","+t_item+","+t_lastdate);
+		}
+		else{
+			console.log("next:"+r_bname[count+1]);
+			if((count+1)<r_cnt.length){
+				setTimeout(function(){
+					setBot(count+1,r_name[count+1],r_bname[count+1],r_index[count+1],r_item[count+1],r_lastdate[count+1]);
+				},(10000*(count+1))+nextBoardt);
+			}
+		}
+		
         });
-    }, null, true, 'Asia/Taipei');
 }
 
 function run_bot(owner,snum,fin){
@@ -42,21 +75,30 @@ function run_bot(owner,snum,fin){
         service = JSON.parse(fs.readFileSync('./service/'+owner+'/service'));
         boards = service['boards'];
         dir = service['data_dir'];
-        interval = service['intervalPer'];
+        page_interval = service['intervalPer_page'];
+        article_interval = service['intervalPer_article'];
         againTime = parseInt(service['againTime']);
         nextBoardt = parseInt(service['nextBoardt']);
        
         exports.dir = dir;
-        exports.interval = interval;
+        exports.page_interval = page_interval;
+        exports.article_interval = article_interval;
         exports.againTime = againTime ;
         exports.nextBoardt = nextBoardt;
         exports.startnum = startnum ;
+	
+	var boards_list = [];
+	var result = "";
         //create folder or use existing
         for(var i=0;i<boards.length;i++){
             //boards_list.push(boards[i].name);
             createDir(i,owner,boards[i].name,function(cnt,name,bname,index,item,lastdate){
-                //console.log(name+"/"+bname+" dir created done"+" index:"+index+" item:"+item);
-                fin(cnt,name,bname,index,item,lastdate);
+                //console.log(name+"/["+cnt+"]"+bname+" dir created done"+" index:"+index+" item:"+item);
+		result +=cnt+"~"+name+"~"+bname+"~"+index+"~"+item+"~"+lastdate+",";
+                //fin(cnt,name,bname,index,item,lastdate);
+		if(cnt==boards.length-1){
+			fin(result);	
+		}
             });
         }
     }

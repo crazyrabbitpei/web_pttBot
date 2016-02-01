@@ -34,18 +34,37 @@ function run_bot(owner,snum,fin){
     try{
         var boards;
         service = JSON.parse(fs.readFileSync('./service/'+owner+'/service1'));
-        boards = service['boards'];
+	if(process.argv[2]){
+        	boards = process.argv[2];
+	}
+	else{
+		console.log("board name?");
+		process.exit();
+		return;
+	}
+	if(boards==""){
+		console.log("board name?");
+		process.exit();
+		return;
+	}
+        //boards = service['boards'];
         dir = service['data_dir'];
         interval = service['intervalPer'];
         againTime = parseInt(service['againTime']);
         nextBoardt = parseInt(service['nextBoardt']);
+	//single version
+	createDir(owner,boards,function(name,bname,index,item,lastdate){
+		fin(name,bname,index,item,lastdate);
+	});
         //create folder or use existing
+	/*
         for(var i=0;i<boards.length;i++){
             createDir(owner,boards[i].name,function(name,bname,index,item,lastdate){
                 //console.log(name+"/"+bname+" dir created done"+" index:"+index+" item:"+item);
                 fin(name,bname,index,item,lastdate);
             });
         }
+	*/
     }
     catch(e){
         console.log("[error] run_bot:"+e);
@@ -162,6 +181,7 @@ function crawlIndex(name,board,index,item,lastdate)
         }
         finally{
             if(status=="false"){
+		console.log("error:"+error+"\n"+body+"\n"+response.statusCode);
                 return;
             }
             else{
@@ -242,13 +262,6 @@ function lookp(lastdate,current_page,href,end_page,item,board,owner,timeper,fin)
             myBot.checklist(body,end_page,function(listnum){
                 //console.log("new item num:"+listnum);
                 console.log("current_page:"+current_page+" end_page:"+end_page);
-                /*
-                if(current_page==end_page&&listnum==item){
-                    //console.log("no news");
-                    //fin(1);
-                    //return;
-                }
-                */
                 if(current_page>=end_page){
                     fs.writeFile('./ptt_data/'+owner+'/'+board+'/item.txt',listnum);
                 }

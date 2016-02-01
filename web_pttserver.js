@@ -13,7 +13,8 @@ var now = new Date();
 var link_count=0;
 
 var dir = myMoudle.dir;
-var interval = myMoudle.interval;
+var page_interval = myMoudle.pgae_interval;
+var article_interval = myMoudle.article_interval;
 var againTime = myMoudle.againTime;
 var nextBoardt = myMoudle.nextBoardt;
 var startnum = myMoudle.startnum;
@@ -131,7 +132,7 @@ function createDir(owner,board,fin){
     //} 
 }
 */
-function crawlIndex(name,board,index,item,lastdate)
+function crawlIndex(cnt,name,board,index,item,lastdate,fin)
 {
     //get new page
     request({
@@ -140,29 +141,33 @@ function crawlIndex(name,board,index,item,lastdate)
             'Cookie': 'over18=1'
         }
     },function(error, response, body){
-        var status="";
+        var stat="";
         try{
             var $ = cheerio.load(body);
             var nextpage=0;
             var  get_page = $("div > div > div.action-bar > div.btn-group.pull-right > a:nth-child(2).btn.wide");
             var page = parseInt(S(get_page.attr('href')).between('index','.html').s)+1;
+		/*
             if(page<index){
                 console.log("PTT server error");
+		fin(-1,cnt,name,index,item,lastdate);
                 return;
             }
-            else{
+	*/
+            //else{
                 fs.writeFile('./ptt_data/'+name+'/'+board+'/index.txt', page);
-            }
+            //}
         }
         catch(e){
-            status="false";
+            stat="false";
         }
         finally{
-            if(status=="false"){
+            if(stat=="false"){
+		fin(response.statusCode,cnt,name,index,item,lastdate);
                 return;
             }
             else{
-                console.log("lastdate:"+lastdate+" index:"+index+" item:"+item+" total page:"+page);
+                console.log("["+board+"] lastdate:"+lastdate+" index:"+index+" item:"+item+" total page:"+page);
                 var url="";
                 var i = page;
                 var tag = setInterval(function(){
@@ -170,34 +175,39 @@ function crawlIndex(name,board,index,item,lastdate)
                         if(i<=0){
                             console.log("to the end");
                             fs.writeFile('./service/'+name+'/links_count', link_count);
+			    fin(board,cnt,name,index,item,lastdate);
                             clearInterval(tag);
+
                             return;
                         }
                     }
 
                     url = "https://www.ptt.cc/bbs/"+board+"/index"+i+".html";
                     if(index!=i){
-                        lookp(lastdate,i,url,page,19,board,name,interval,function(reach){
+                        lookp(0,lastdate,i,url,page,19,board,name,article_interval,function(reach){
                             if(reach==1){
                                 console.log("reach date");
                                 fs.writeFile('./service/'+name+'/links_count', link_count);
+				fin(board,cnt,name,index,item,lastdate);
                                 clearInterval(tag);
+
                                 return;
                             }
                         });
                     }
                     else{
-                        lookp(lastdate,i,url,page,item,board,name,interval,function(reach){
+                        lookp(0,lastdate,i,url,page,item,board,name,article_interval,function(reach){
                             if(reach==1){
                                 console.log("reach date");
                                 fs.writeFile('./service/'+name+'/links_count', link_count);
                                 clearInterval(tag);
+				fin(board,cnt,name,index,item,lastdate);
                                 return;
                             }
                         });
                     }
                     i--;
-                },interval);
+                },page_interval);
             }
 
         }
@@ -205,7 +215,7 @@ function crawlIndex(name,board,index,item,lastdate)
 
 }
 
-function lookp(lastdate,current_page,href,end_page,item,board,owner,timeper,fin){
+function lookp(check,lastdate,current_page,href,end_page,item,board,owner,timeper,fin){
     request({
         uri: href,
         headers:{                                                                                                                                'Cookie': 'over18=1'
@@ -214,26 +224,32 @@ function lookp(lastdate,current_page,href,end_page,item,board,owner,timeper,fin)
     }, function(error, response, body) {
         if(typeof response == "undefined"){
             //fs.appendFile('./ptt_data/'+owner+'/'+board+'/tryagain',href+"\n");
+	if(check<30){
             setTimeout(
                 function(){
                     var date = new Date();
                     //fs.appendFile('./ptt_data/'+owner+'/'+board+'/tryagain_web',"t:["+date+"]"+href+"\n");
-                    lookp(lastdate,current_page,href,end_page,item,board,owner,timeper,fin);
+                    lookp(check+1,lastdate,current_page,href,end_page,item,board,owner,timeper,fin);
                 },
-                againTime+(current_page*1000)
+                //(againTime*current_page)+1000
+		againTime+current_page
             )
+	}
         }
         else if(response.statusCode!==200){
             //fs.appendFile('./ptt_data/'+owner+'/'+board+'/log_web_article.txt', "--->["+current_page+"]page response:"+response.statusCode+'\n'+"uri:"+'https://www.ptt.cc/bbs/'+board+'/index'+current_page+'.html'+"\n");
             if(response.statusCode===503){
+		if(check<30){
                 setTimeout(
                     function(){
                         var date = new Date();
                         //fs.appendFile('./ptt_data/'+owner+'/'+board+'/tryagain_web',"t:["+date+"]"+href+"\n");
-                        lookp(lastdate,current_page,href,end_page,item,board,owner,timeper,fin);
+                        lookp(check+1,lastdate,current_page,href,end_page,item,board,owner,timeper,fin);
                     },
-                    againTime+(current_page*1000)
+                    //(againTime*current_page)+1000
+			againTime+current_page
                 )
+		}
             }
         }
         else{
@@ -243,12 +259,6 @@ function lookp(lastdate,current_page,href,end_page,item,board,owner,timeper,fin)
                 if(current_page>=end_page){
                     fs.writeFile('./ptt_data/'+owner+'/'+board+'/item.txt',listnum);
                 }
-                /*
-                else if(current_page==end_page&&listnum==item){
-                    console.log("no news");
-                    //return;
-                }
-                */
                 myBot.start(lastdate,current_page,item,body,board,end_page,owner,timeper,function(cnt,reach){
                     var date = new Date();
                     link_count +=cnt;
