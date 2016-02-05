@@ -97,7 +97,7 @@ function toGais(lastdate,record,content,date,owner,board,linc,linc_length,curren
         //record last timestamp
         
         //console.log("==>linc:"+linc+" linc_length:"+linc_length+" current_page:"+current_page+" end_page:"+end_page);
-        if(linc==linc_length-1&&current_page==end_page){
+        if(linc==linc_length-1&&(current_page==end_page||current_page=="")){
             fs.writeFile('./ptt_data/'+owner+'/'+board+'/lastdate.txt',time);
         }
         var s_lastdate=0,s_time=0;

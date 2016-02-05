@@ -26,7 +26,10 @@ function checklist(body,page,callback){
         $("div > div > div > div.title").each(function(){
             var link = $(this);
             var text = link.text();
-            article_text.push(text);
+            if(text.indexOf("本文已被刪除")==-1){
+                article_text.push(text);
+            }
+
         });
     }
     catch(e){
@@ -58,11 +61,15 @@ function start(lastdate,current_page,citem,body,board,page,owner,timeper,callbac
         var $ = cheerio.load(body);
         $("div > div > div > div.title").each(function(){
             var link = $(this);
-            var text = link.text();
+
             var href = link.children().attr('href');
-            article_link.push(href);
-            article_text.push(text);
-            cnt++;
+            
+            var text = link.text();
+            if(text.indexOf("本文已被刪除")==-1){
+                article_link.push(href);
+                article_text.push(text);
+                cnt++;
+            }
         });
     }
     catch(e){
@@ -90,9 +97,9 @@ function start(lastdate,current_page,citem,body,board,page,owner,timeper,callbac
                 href = article_link[linc];
                 //console.log("page:"+current_page+" linc:"+linc+" article_link:"+article_link[linc]+" temp_cnt:"+temp_cnt);
                 if(linc==-1){
-                    clearInterval(terid);
+                   clearInterval(terid);
                 }
-                else if(typeof article_link[linc]=="undefined"){
+            else if(typeof article_link[linc]=="undefined"){
                     //console.log("linc:"+linc+" article_link.length:"+article_link.length);
                     
                     //console.log("article_link["+linc+"]=\"undefined\"");
