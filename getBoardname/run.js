@@ -6,13 +6,17 @@ var cheerio = require("cheerio");
 var S = require('string');
 var he = require('he');
 var dateFormat = require('dateformat');
+var CronJob = require('cron').CronJob;
 
 var againTime="10000";
 var group_link = new Array();
 var config_name = process.argv[2];
 var againCount=0;
 
+
+
 read_config(config_name,function(list_filename,door,root,groupInterval){
+    fs.writeFile(list_filename,"");//clean
 	grab_boardname(list_filename,door,root,groupInterval,function(stat){
 		console.log(stat);
         if(stat=="done"){
@@ -33,10 +37,11 @@ read_config(config_name,function(list_filename,door,root,groupInterval){
 	});
 });
 
+
 function read_config(filename,fin)
 {
     var service = JSON.parse(fs.readFileSync(filename));
-	var list_filename = service["list_filename"];
+	var list_filename = service["hot_list_filename"];
 	var site_door =  service["site_door"];
 	var root =  service["root"];
 	var groupInterval =  service["groupInterval"];

@@ -26,9 +26,7 @@ function checklist(body,page,callback){
         $("div > div > div > div.title").each(function(){
             var link = $(this);
             var text = link.text();
-            if(text.indexOf("本文已被刪除")==-1){
-                article_text.push(text);
-            }
+            article_text.push(text);
 
         });
     }
@@ -65,11 +63,9 @@ function start(lastdate,current_page,citem,body,board,page,owner,timeper,callbac
             var href = link.children().attr('href');
             
             var text = link.text();
-            if(text.indexOf("本文已被刪除")==-1){
-                article_link.push(href);
-                article_text.push(text);
-                cnt++;
-            }
+            article_link.push(href);
+            article_text.push(text);
+            cnt++;
         });
     }
     catch(e){
@@ -92,6 +88,7 @@ function start(lastdate,current_page,citem,body,board,page,owner,timeper,callbac
                 temp_cnt=0;
             }
             */
+            var lastpost="";
             var terid = setInterval(function(){
                 text = article_text[linc];
                 href = article_link[linc];
@@ -99,7 +96,7 @@ function start(lastdate,current_page,citem,body,board,page,owner,timeper,callbac
                 if(linc==-1){
                    clearInterval(terid);
                 }
-            else if(typeof article_link[linc]=="undefined"){
+                else if(typeof article_link[linc]=="undefined"){
                     //console.log("linc:"+linc+" article_link.length:"+article_link.length);
                     
                     //console.log("article_link["+linc+"]=\"undefined\"");
@@ -110,7 +107,10 @@ function start(lastdate,current_page,citem,body,board,page,owner,timeper,callbac
                     }
                 }
                 else{
-                    look(0,lastdate,href,text,"0",board,owner,linc,article_link.length,current_page,endpage,function(reach,temp_owner,temp_board,temp_current_page,temp_linc,temp_linc_length,temp_href){
+                    if(lastpost==""){
+                        lastpost = linc;
+                    }
+                    look(lastpost,0,lastdate,href,text,"0",board,owner,linc,article_link.length,current_page,endpage,function(reach,temp_owner,temp_board,temp_current_page,temp_linc,temp_linc_length,temp_href){
                         if(reach==1){
                             clearInterval(terid);
                             callback(temp_linc_length,reach);
@@ -141,7 +141,7 @@ exports.checklist=checklist;
 exports.start = start;
 
 
-function look(check,lastdate,href,text,value,board,owner,linc,linc_length,current_page,end_page,fin){
+function look(lastpost,check,lastdate,href,text,value,board,owner,linc,linc_length,current_page,end_page,fin){
     var web="https://www.ptt.cc";
     var url = web+href;
     var date;
@@ -159,7 +159,7 @@ function look(check,lastdate,href,text,value,board,owner,linc,linc_length,curren
 				function(){
 				date = new Date();
 				//fs.appendFile('./ptt_data/'+owner+'/'+board+'/tryagain_link',"t:["+date+"]"+href+"\n");
-				look(check+1,lastdate,href,text,"503",board,owner,linc,linc_length,current_page,end_page,fin);
+				look(lastpost,check+1,lastdate,href,text,"503",board,owner,linc,linc_length,current_page,end_page,fin);
 				},
 				againTime
 			)
@@ -178,7 +178,7 @@ function look(check,lastdate,href,text,value,board,owner,linc,linc_length,curren
                     function(){
                         date = new Date();
                         //fs.appendFile('./ptt_data/'+owner+'/'+board+'/tryagain_link',"t:["+date+"]"+href+"\n");
-                        look(check+1,lastdate,href,text,"503",board,owner,linc,linc_length,current_page,end_page,fin);
+                        look(lastpost,check+1,lastdate,href,text,"503",board,owner,linc,linc_length,current_page,end_page,fin);
                     },
                     againTime
                 )
@@ -199,7 +199,7 @@ function look(check,lastdate,href,text,value,board,owner,linc,linc_length,curren
             //fs.appendFile('./ptt_data/'+owner+'/'+board+'/tryagain_link',"=>okt:["+date+"]"+href+"\n");
             iconv.encode(body,'utf-8');
             
-            parseHtml.convert(lastdate,text,body,board,url,owner,linc,linc_length,current_page,end_page,function(reach,temp_owner,temp_board,temp_current_page,temp_linc,temp_linc_length,temp_url){
+            parseHtml.convert(lastpost,lastdate,text,body,board,url,owner,linc,linc_length,current_page,end_page,function(reach,temp_owner,temp_board,temp_current_page,temp_linc,temp_linc_length,temp_url){
                 fin(reach,temp_owner,temp_board,temp_current_page,temp_linc,temp_linc_length,temp_url);
                 return;
             });

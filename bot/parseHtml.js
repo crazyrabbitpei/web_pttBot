@@ -11,7 +11,7 @@ var deletetag = require('./deleteTag');
 
 var old_date="";
 var p_board="";
-function convert(lastdate,title,body,board,url,owner,linc,linc_length,current_page,end_page,fin){
+function convert(lastpost,lastdate,title,body,board,url,owner,linc,linc_length,current_page,end_page,fin){
     var date = dateFormat(new Date(), "yyyymmdd");
     var record="";
     if(date!=old_date&&p_board!=board){
@@ -25,11 +25,11 @@ function convert(lastdate,title,body,board,url,owner,linc,linc_length,current_pa
     record += "@\n@title:"+title+"\n";
     record += "@source:ptt/"+board+"\n";
     record += "@url:"+url+"\n";
-    toGais(lastdate,record,body,date,owner,board,linc,linc_length,current_page,end_page,function(reach){
+    toGais(lastpost,lastdate,record,body,date,owner,board,linc,linc_length,current_page,end_page,function(reach){
             fin(reach,owner,board,current_page,linc,linc_length,url);
     });
 }
-function toGais(lastdate,record,content,date,owner,board,linc,linc_length,current_page,end_page,fin){
+function toGais(lastpost,lastdate,record,content,date,owner,board,linc,linc_length,current_page,end_page,fin){
     var timeS=0;
     var bodyS=0;
 
@@ -97,7 +97,7 @@ function toGais(lastdate,record,content,date,owner,board,linc,linc_length,curren
         //record last timestamp
         
         //console.log("==>linc:"+linc+" linc_length:"+linc_length+" current_page:"+current_page+" end_page:"+end_page);
-        if(linc==linc_length-1&&(current_page==end_page||current_page=="")){
+        if(linc==lastpost&&(current_page==end_page||current_page=="")){
             fs.writeFile('./ptt_data/'+owner+'/'+board+'/lastdate.txt',time);
         }
         var s_lastdate=0,s_time=0;

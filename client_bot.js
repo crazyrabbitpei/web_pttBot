@@ -16,10 +16,31 @@ var interval;
 var againTime;
 var nextBoardt;
 var startnum;
+
+var toDir =  process.argv[2];
+var board_name = S(process.argv[3]).between('bbs/','/index').s;
+
+run_bot(toDir,board_name,function(name,bname,index,item,lastdate){
+    if(name==0||bname==0){
+        console.log("run_bot error");   
+    }
+    else{
+        console.log("name:"+name+" bname:"+bname+" url:"+process.argv[3]);
+        crawlIndex(name,bname,index,item,lastdate,function(stat){
+            if(stat=="false"||stat=="503"){
+                console.error(stat);
+            }
+            console.log(stat);
+            //process.send(stat);
+            //process.exit(0);
+        });
+    }
+});
+/*
 process.on('message',(url) => {
     console.log('CHILD got message:', url);
     var board_name = S(url).between('bbs/','/index').s;
-    run_bot("peipei",board_name,function(name,bname,index,item,lastdate){
+    run_bot(toDir,board_name,function(name,bname,index,item,lastdate){
         if(name==0||bname==0){
             console.log("run_bot error");   
         }
@@ -27,10 +48,12 @@ process.on('message',(url) => {
             console.log("name:"+name+" bname:"+bname+" url:"+url);
             crawlIndex(name,bname,index,item,lastdate,function(stat){
                 process.send(stat);
+                //process.exit(0);
             });
         }
     });
 });
+*/
 function run_bot(owner,board,fin){
     //read service information
     try{
@@ -142,18 +165,24 @@ function crawlIndex(name,board,index,item,lastdate,fin)
             var page="";
             if(S(get_page.attr('href')).s){
                 //console.log("href:"+S(get_page.attr('href')).s);
+                fs.writeFile('./ptt_data/'+name+'/'+board+'/href.txt', S(get_page.attr('href')).s);
                 page = parseInt(S(get_page.attr('href')).between('index','.html').s)+1;
                 fs.writeFile('./ptt_data/'+name+'/'+board+'/index.txt', page);
             }
-            console.log("page:"+page);
         }
         catch(e){
             status="false";
         }
         finally{
             if(status=="false"){
-                fs.appendFile('./ptt_data/'+name+'/'+board+'/error.log',"error:"+error+"\n"+body+"\n"+response.statusCode);
-                fin(response.statusCode);
+                if(typeof response !="undefiend"){
+                    fs.appendFile('./ptt_data/'+name+'/'+board+'/error.log',"error:"+error+"\n"+body+"\n"+response.statusCode);
+                    fin(response.statusCode);
+                }
+                else{
+                    fs.appendFile('./ptt_data/'+name+'/'+board+'/error.log',"error:"+error+"\n"+body+"\n");
+                    fin('false');
+                }
                 return;
             }
             else{
@@ -161,7 +190,7 @@ function crawlIndex(name,board,index,item,lastdate,fin)
                 var i = page;
                 var tag = setInterval(function(){
                     if(lastdate==0){
-                        if(i<=0&&i!=""){
+                        if(i<0&&i!=""){
                             console.log("to the end");
                             fs.writeFile('./service/'+name+'/links_count', link_count);
                             clearInterval(tag);
@@ -236,7 +265,7 @@ function lookp(lastdate,current_page,href,end_page,item,board,owner,timeper,fin)
         else{
             myBot.checklist(body,end_page,function(listnum){
                 //console.log("new item num:"+listnum);
-                console.log("current_page:"+current_page+" end_page:"+end_page);
+                //console.log("current_page:"+current_page+" end_page:"+end_page);
                 if(current_page>=end_page){
                     fs.writeFile('./ptt_data/'+owner+'/'+board+'/item.txt',listnum);
                 }
