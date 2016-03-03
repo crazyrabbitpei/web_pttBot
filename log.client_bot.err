@@ -1,0 +1,58 @@
+[https://www.ptt.cc/bbs/TransBioChem/index.html]
+false
+
+[https://www.ptt.cc/bbs/Uni-Service/index.html]
+false
+
+[]
+/home/crazyrabbit/web_pttBot/node_modules/string/lib/string.js:67
+      var startPos = s.indexOf(left);
+                      ^
+
+TypeError: Cannot read property 'indexOf' of undefined
+    at S.between (/home/crazyrabbit/web_pttBot/node_modules/string/lib/string.js:67:23)
+    at Object.<anonymous> (/home/crazyrabbit/web_pttBot/client_bot.js:21:37)
+    at Module._compile (module.js:413:34)
+    at Object.Module._extensions..js (module.js:422:10)
+    at Module.load (module.js:357:32)
+    at Function.Module._load (module.js:314:12)
+    at Function.Module.runMain (module.js:447:10)
+    at startup (node.js:139:18)
+    at node.js:999:3
+
+[]
+/home/crazyrabbit/web_pttBot/node_modules/string/lib/string.js:67
+      var startPos = s.indexOf(left);
+                      ^
+
+TypeError: Cannot read property 'indexOf' of undefined
+    at S.between (/home/crazyrabbit/web_pttBot/node_modules/string/lib/string.js:67:23)
+    at Object.<anonymous> (/home/crazyrabbit/web_pttBot/client_bot.js:26:41)
+    at Module._compile (module.js:413:34)
+    at Object.Module._extensions..js (module.js:422:10)
+    at Module.load (module.js:357:32)
+    at Function.Module._load (module.js:314:12)
+    at Function.Module.runMain (module.js:447:10)
+    at startup (node.js:139:18)
+    at node.js:999:3
+
+[https://www.ptt.cc/bbs/Taitung/index.html]
+FATAL ERROR: CALL_AND_RETRY_LAST Allocation failed - process out of memory
+Aborted (core dumped)
+
+[https://www.ptt.cc/bbs/StupidClown/index.html]
+FATAL ERROR: CALL_AND_RETRY_LAST Allocation failed - process out of memory
+Aborted (core dumped)
+
+[https://www.ptt.cc/bbs/HatePolitics/index.html]
+FATAL ERROR: CALL_AND_RETRY_LAST Allocation failed - process out of memory
+Aborted (core dumped)
+
+[https://www.ptt.cc/bbs/Hate/index.html]
+FATAL ERROR: CALL_AND_RETRY_LAST Allocation failed - process out of memory
+Aborted (core dumped)
+
+[https://www.ptt.cc/bbs/basketballTW/index.html]
+FATAL ERROR: CALL_AND_RETRY_LAST Allocation failed - process out of memory
+Aborted (core dumped)
+

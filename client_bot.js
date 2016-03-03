@@ -18,24 +18,30 @@ var nextBoardt;
 var startnum;
 
 var toDir =  process.argv[2];
-var board_name = S(process.argv[3]).between('bbs/','/index').s;
+if(process.argv[3]==""||typeof process.argv[3] ===undefined){
+    console.error("empty");
+    return;
+}
+else{
+    var board_name = S(process.argv[3]).between('bbs/','/index').s;
 
-run_bot(toDir,board_name,function(name,bname,index,item,lastdate){
-    if(name==0||bname==0){
-        console.log("run_bot error");   
-    }
-    else{
-        console.log("name:"+name+" bname:"+bname+" url:"+process.argv[3]);
-        crawlIndex(name,bname,index,item,lastdate,function(stat){
-            if(stat=="false"||stat=="503"){
-                console.error(stat);
-            }
-            console.log(stat);
-            //process.send(stat);
-            //process.exit(0);
-        });
-    }
-});
+    run_bot(toDir,board_name,function(name,bname,index,item,lastdate){
+        if(name==0||bname==0){
+            console.log("run_bot error");   
+        }
+        else{
+            console.log("name:"+name+" bname:"+bname+" url:"+process.argv[3]);
+            crawlIndex(name,bname,index,item,lastdate,function(stat){
+                if(stat=="false"||stat=="503"){
+                    console.error(stat);
+                }
+                console.log(stat);
+                //process.send(stat);
+                //process.exit(0);
+            });
+        }
+    });
+}
 /*
 process.on('message',(url) => {
     console.log('CHILD got message:', url);
@@ -175,7 +181,7 @@ function crawlIndex(name,board,index,item,lastdate,fin)
         }
         finally{
             if(status=="false"){
-                if(typeof response !="undefiend"){
+                if(typeof response !="undefined"){
                     fs.appendFile('./ptt_data/'+name+'/'+board+'/error.log',"error:"+error+"\n"+body+"\n"+response.statusCode);
                     fin(response.statusCode);
                 }
@@ -246,7 +252,7 @@ function lookp(lastdate,current_page,href,end_page,item,board,owner,timeper,fin)
                     //fs.appendFile('./ptt_data/'+owner+'/'+board+'/tryagain_web',"t:["+date+"]"+href+"\n");
                     lookp(lastdate,current_page,href,end_page,item,board,owner,timeper,fin);
                 },
-                againTime+(current_page*1000)
+                againTime+current_page
             )
         }
         else if(response.statusCode!==200){
@@ -258,7 +264,7 @@ function lookp(lastdate,current_page,href,end_page,item,board,owner,timeper,fin)
                         //fs.appendFile('./ptt_data/'+owner+'/'+board+'/tryagain_web',"t:["+date+"]"+href+"\n");
                         lookp(lastdate,current_page,href,end_page,item,board,owner,timeper,fin);
                     },
-                    againTime+(current_page*1000)
+                    againTime+current_page
                 )
             }
         }

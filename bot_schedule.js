@@ -11,13 +11,17 @@ var url_map = new HashMap();
 var hoturl_map = new HashMap();
 var keys;//record all key from url_map
 var values;//record all values from url_map
+
 var index=0;
+//var list_num=10;
+var list_num=process.argv[2];
+var total_list_num=process.argv[3];
 
 var date_start;
 var date_end;
 
 var list_config = JSON.parse(fs.readFileSync(`${__dirname}/getBoardname/config/setting`));
-var list_name = list_config['test_list_filename'];
+var list_name = list_config['list_filename'];
 var hot_list_name = list_config['hot_list_filename'];
 
 var numWorkers = require('os').cpus().length;
@@ -26,23 +30,39 @@ var numWorkers = require('os').cpus().length;
 var toDir = "test1";
 
 readhotURL(hot_list_name,function(msg){
-    readURL(toDir,list_name,function(msg){
+    init(list_num);
+});
+
+function init(lnum){
+    var i;
+    url_map.clear();
+    index=0;
+    readURL(toDir,list_name+lnum+"_split",function(msg){
+        for(i=0;i<values.length;i++){
+            if(keys[i]!=""&&typeof hoturl_map.get(keys[i])=="undefined"){
+                index=i;
+                break;
+            } 
+        }
+        console.log("["+list_num+"] ["+index+"] Start crawling "+keys[index]);
         date_start = new Date();
         start(toDir,keys[index]);
     });
-});
+
+}
 
 function start(dir,url){
+    //console.log(`node ${__dirname}/client_bot.js `+toDir+' '+url);
     const child = exec(`node ${__dirname}/client_bot.js `+toDir+' '+url,(error,stdout,stderr) => {
-        console.log(`stdout: ${stdout}`);
-
+        //console.log(`stdout: ${stdout}`);
+    
         if(error !== null){
             console.log(`exec error: ${error}`);
         }
-        if(stderr=='503'||stderr=='false'){
+        if(stderr=='503\n'||stderr=='false\n'){
             index--;
             console.log(url+" will be crawled after 5 minutes");
-            fs.appendFile(`${__dirname}/log.client_bot`,url+" will be crawled after 5 minutes",function(err){
+            fs.appendFile(`${__dirname}/log.client_bot`,url+" will be crawled after 5 minutes\n",function(err){
                 if(err){
                     fs.writeFile(`${__dirname}/log.client_bot.err`,err,function(){});
                 }
@@ -55,37 +75,63 @@ function start(dir,url){
         }
         else if(stderr !== null){
             if(stderr==''){
-                index++;
                 date_end = new Date();
                 fs.appendFile(`${__dirname}/log.client_bot`,'['+keys[index]+']\n'+date_start+'\n'+date_end+'\n',function(err){
                     if(err){
+                        console.log("error occur");
                         fs.writeFile(`${__dirname}/log.client_bot.err`,err,function(){});
                     }
-                    if(index==values.length){
-                        console.log("All boards crawled:"+index);
-                    }
                 });
-
+                index++;
                 if(index<values.length){
                     if(typeof hoturl_map.get(url)!="undefined"){
                         index++;
                     }
                     if(index==values.length){
                         console.log("All boards crawled:"+index);
+                        fs.appendFile(`${__dirname}/log.client_bot.list`,'['+list_num+']\n'+"All boards crawled:"+index+"\n",function(err){
+                            if(err){
+                                fs.writeFile(`${__dirname}/log.list.err`,err,function(){});
+
+                            }
+                        });
+                        list_num++;
+                        if(list_num>total_list_num){
+                            console.log("All list crawled:"+list_num);   
+                        }
+                        else{
+                            init(list_num);
+                        }
                     }
                     else{
-                        console.log("Waiting...next board is "+keys[index]);
+                        console.log("["+index+"] Waiting...next board is "+keys[index]);
                         setTimeout(function(){
-                            console.log("Start crawling "+keys[index]);
+                            console.log("["+list_num+"] ["+index+"] Start crawling "+keys[index]);
                             date_start = new Date();
                             start(dir,keys[index]);
-                        },60*1000);
+                        },1*1000);
+                    }
+                }
+                else if(index==values.length){
+                    console.log("All boards crawled:"+index);
+                    fs.appendFile(`${__dirname}/log.client_bot.list`,'['+list_num+']\n'+"All boards crawled:"+index+"\n",function(err){
+                        if(err){
+                            fs.writeFile(`${__dirname}/log.list.err`,err,function(){});
+
+                        }
+                    });
+                    list_num++;
+                    if(list_num>total_list_num){
+                        console.log("All list crawled:"+list_num);   
+                    }
+                    else{
+                        init(list_num);
                     }
                 }
             }
             else{
                 console.log(`stderr:[${stderr}]`);
-                fs.appendFile(`${__dirname}/log.client_bot.err`,stderr+'\n',function(err){
+                fs.appendFile(`${__dirname}/log.client_bot.err`,'['+keys[index]+']\n'+stderr+'\n',function(err){
                     if(err){
                         fs.writeFile(`${__dirname}/log.client_bot.err`,err,function(){});
                     }
@@ -196,13 +242,13 @@ function readURL(dir,filename,fin){
         
     });
     lr.on('end',function(){
-        console.log("read ptt url list done");
+        console.log("read ptt url ["+list_num+"] list done");
         keys = url_map.keys();
         values = url_map.values();
         if(typeof hoturl_map.get(keys[index]) !="undefined"){
             index++;
         }
-        fin("read ptt url list done");
+        fin("read ptt url ["+list_num+"] list done");
         //date_start = new Date();
         //client_bot.send(keys[index]);
         //start(dir,keys[index]);

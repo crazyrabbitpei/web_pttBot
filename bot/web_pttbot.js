@@ -146,7 +146,7 @@ function look(lastpost,check,lastdate,href,text,value,board,owner,linc,linc_leng
     var url = web+href;
     var date;
     //var againTime = (10000*linc)+1000;
-    var againTime = 1000+(linc*100);
+    var againTime = 2000;
     request({
         uri:url,
         headers:{                                                                                                                                'Cookie': 'over18=1'
