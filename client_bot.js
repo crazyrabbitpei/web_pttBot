@@ -198,7 +198,7 @@ function crawlIndex(name,board,index,item,lastdate,fin)
                     if(lastdate==0){
                         if(i<0&&i!=""){
                             console.log("to the end");
-                            fs.writeFile('./service/'+name+'/links_count', link_count);
+                            //fs.writeFile('./service/'+name+'/links_count', link_count);
                             clearInterval(tag);
                             fin("FIRST crawled:"+board);
                             return;
@@ -210,7 +210,7 @@ function crawlIndex(name,board,index,item,lastdate,fin)
                         lookp(lastdate,i,url,page,19,board,name,interval,function(reach){
                             if(reach==1){
                                 console.log("reach date");
-                                fs.writeFile('./service/'+name+'/links_count', link_count);
+                                //fs.writeFile('./service/'+name+'/links_count', link_count);
                                 clearInterval(tag);
                                 fin(board);
                                 return;
@@ -221,7 +221,7 @@ function crawlIndex(name,board,index,item,lastdate,fin)
                         lookp(lastdate,i,url,page,item,board,name,interval,function(reach){
                             if(reach==1){
                                 console.log("reach date");
-                                fs.writeFile('./service/'+name+'/links_count', link_count);
+                                //fs.writeFile('./service/'+name+'/links_count', link_count);
                                 clearInterval(tag);
                                 fin(board);
                                 return;
