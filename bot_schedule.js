@@ -1,3 +1,4 @@
+'use strict'
 /*
 const cp = require('child_process');
 const client_bot = cp.fork(`${__dirname}/client_bot.js`);
@@ -7,12 +8,14 @@ var dateFormat = require('dateformat');
 var fs = require('graceful-fs');
 var LineByLineReader = require('line-by-line');
 var HashMap = require('hashmap');
+var client_bot = require('./client_bot.js');
 var url_map = new HashMap();
 var hoturl_map = new HashMap();
 var keys;//record all key from url_map
 var values;//record all values from url_map
 
 var index=0;
+var real_index=index+1;
 //var list_num=10;
 var list_num=process.argv[2];
 var total_list_num=process.argv[3];
@@ -24,21 +27,24 @@ var list_config = JSON.parse(fs.readFileSync(`${__dirname}/getBoardname/config/s
 var list_name = list_config['list_filename'];
 var hot_list_name = list_config['hot_list_filename'];
 
-var numWorkers = require('os').cpus().length;
-//console.log("numWorkers:"+numWorkers);
+var board_flag="";
 
-var toDir = "test1";
+//var numWorkers = require('os').cpus().length;
+//console.log("numWorkers:"+numWorkers);
 
 readhotURL(hot_list_name,function(msg){
     init(list_num);
 });
 
 function init(lnum){
+    var toDir = "test1";
     var i;
     url_map.clear();
+    board_flag="";
     index=0;
+    real_index=index+1;
     readURL(toDir,list_name+lnum+"_split",function(msg){
-        console.log("["+list_num+"] ["+index+"] Start crawling "+keys[index]);
+        console.log("["+list_num+"] ["+real_index+"] Start crawling "+keys[index]);
         date_start = new Date();
         start(toDir,keys[index]);
     });
@@ -46,93 +52,158 @@ function init(lnum){
 }
 
 function start(dir,url){
-    //console.log(`node ${__dirname}/client_bot.js `+toDir+' '+url);
-    const child = exec(`node ${__dirname}/client_bot.js `+toDir+' '+url,(error,stdout,stderr) => {
-        //console.log(`stdout: ${stdout}`);
-
-        if(error !== null){
-            console.log(`exec error: ${error}`);
-        }
-        if(stderr=='503\n'||stderr=='false\n'){
-            var date = dateFormat(new Date(), "yyyymmdd");
-            index--;
-            console.log(url+" will be crawled after 1 minutes");
-            fs.appendFile(`${__dirname}/logs/again_`+date+`.log`,url+" will be crawled after 1 minutes\n",function(err){
-                if(err){
-                    fs.writeFile(`${__dirname}/logs/err_`+date+`.log`,"1.start:"+err,function(){});
-                }
-            });
-            setTimeout(function(){
-                console.log("Again start crawling "+url);
-                date_start = new Date();
-                start(dir,url);
-            },60*1000);
-        }
-        else if(stderr !== null){
-            var date = dateFormat(new Date(), "yyyymmdd");
-            if(stderr==''){
-                date_end = new Date();
-                fs.appendFile(`${__dirname}/logs/ok_board_`+date+`.timelog`,'['+keys[index]+']\n'+date_start+'\n'+date_end+'\n',function(err){
+    //const child = exec(`/bin/bash -c node ${__dirname}/client_bot.js `+toDir+' '+url,(error,stdout,stderr) => {
+    var callCrawler = new Promise(function(resolve,reject){
+        client_bot.start(url,dir,function(result){
+            if(result=='503'||result=='false'){
+                var date = dateFormat(new Date(), "yyyymmdd");
+                //index--;
+                console.log(url+" will be crawled after 1 minutes");
+                fs.appendFile(`${__dirname}/logs/again_`+date+`.log`,url+" will be crawled after 1 minutes\n",function(err){
                     if(err){
-                        console.log("error occur");
-                        fs.writeFile(`${__dirname}/logs/err_`+date+`.log`,"2.start:"+err,function(){});
+                        fs.appendFile(`${__dirname}/logs/err_`+date+`.log`,"1.start:"+err,function(){});
                     }
                 });
-                index++;
-                if(index<values.length){
-                    if(index==values.length){
-                        console.log("All boards crawled:"+index);
-                        fs.appendFile(`${__dirname}/logs/ok_list_`+date+`.log`,'['+list_num+']\n'+"All boards crawled:"+index+"\n",function(err){
+                resolve("AGAIN,"+dir+","+url+","+list_num);
+            }
+            else{
+            //else if(result!='404'){
+                if(url_map.get(result)!=1){
+                    url_map.set(result,1);
+                    real_index=index+1;
+                    console.log("["+list_num+"]["+real_index+"]result:"+result);
+                    if(result!="404"){
+                        var date = dateFormat(new Date(), "yyyymmdd");
+                        date_end = new Date();
+                        fs.appendFile(`${__dirname}/logs/ok_board_`+date+`.timelog`,'['+keys[index]+']\n'+date_start+'\n'+date_end+'\n',function(err){
                             if(err){
-                                fs.writeFile(`${__dirname}/logs/err_`+date+`.log`,"3.start:"+err,function(){});
+                                console.log("error occur");
+                                fs.appendFile(`${__dirname}/logs/err_`+date+`.log`,"2.start:"+err,function(){});
+                            }
+                        });
+                    }
+                    index++;
+                    real_index=index;
+                    if(index<values.length){
+                        if(index==values.length){
+                            console.log("1.["+list_num+"]All boards crawled:"+real_index);
+                            fs.appendFile(`${__dirname}/logs/ok_list_`+date+`.log`,'['+list_num+']\n'+"All boards crawled:"+real_index+"\n",function(err){
+                                if(err){
+                                    fs.appendFile(`${__dirname}/logs/err_`+date+`.log`,"3.start:"+err,function(){});
+
+                                }
+                            });
+                            list_num++;
+                            console.log("total_list_num:"+total_list_num);
+                            console.log("1.Next list:"+list_num);
+                            if(list_num>total_list_num){
+                                console.log("1.All list crawled:"+list_num-1);
+                                resolve("DONE,"+dir+","+url+","+list_num);
+                            }
+                            else{
+                                resolve("NEXTLIST,"+dir+","+url+","+list_num);
+                            }
+                        }
+                        else{
+                            setTimeout(function(){
+                                //start(dir,keys[index]);
+                                resolve("NEXTURL,"+dir+","+keys[index]+","+list_num);
+                            },5*1000);
+                            //console.log("dir:"+dir+" url:"+keys[index]+" list_num:"+list_num);
+                            //resolve("NEXTURL,"+dir+","+keys[index]+","+list_num);
+                        }
+                    }
+                    else if(index==values.length){
+                        console.log("2.["+list_num+"]All boards crawled:"+real_index);
+                        fs.appendFile(`${__dirname}/logs/ok_list_`+date+`.log`,'['+list_num+']\n'+"All boards crawled:"+real_index+"\n",function(err){
+                            if(err){
+                                fs.appendFile(`${__dirname}/logs/err_`+date+`.log`,"4.start:"+err,function(){});
 
                             }
                         });
                         list_num++;
+                        console.log("total_list_num:"+total_list_num);
                         if(list_num>total_list_num){
-                            console.log("All list crawled:"+list_num);   
+                            console.log("2.All list crawled:"+list_num-1);   
+                            resolve("DONE,"+dir+","+url+","+list_num);
                         }
                         else{
-                            init(list_num);
+                            //init(list_num);
+                            resolve("NEXTLIST,"+dir+","+keys[index-1]+","+list_num);
                         }
                     }
-                    else{
-                        console.log("["+index+"] Waiting...next board is "+keys[index]);
-                        setTimeout(function(){
-                            console.log("["+list_num+"] ["+index+"] Start crawling "+keys[index]);
-                            date_start = new Date();
-                            start(dir,keys[index]);
-                        },1*1000);
-                    }
                 }
-                else if(index==values.length){
-                    console.log("All boards crawled:"+index);
-                    fs.appendFile(`${__dirname}/logs/ok_list_`+date+`.log`,'['+list_num+']\n'+"All boards crawled:"+index+"\n",function(err){
-                        if(err){
-                            fs.writeFile(`${__dirname}/logs/err_`+date+`.log`,"4.start:"+err,function(){});
+                else{
+                    real_index=index+1;
+                    console.log("3.["+list_num+"]["+real_index+"]has cralwed => result:"+result);
+                    if(result=="404"){
+                        index++;
+                        real_index=index;
+                    }
+                    if(index==values.length){
+                        console.log("total_list_num:"+total_list_num);
+                        console.log("3.["+list_num+"]All boards crawled:"+real_index);
+                        fs.appendFile(`${__dirname}/logs/ok_list_`+date+`.log`,'['+list_num+']\n'+"All boards crawled:"+real_index+"\n",function(err){
+                            if(err){
+                                fs.appendFile(`${__dirname}/logs/err_`+date+`.log`,"4.start:"+err,function(){});
 
+                            }
+                        });
+                        if(list_num>total_list_num){
+                            console.log("3.All list crawled:"+list_num-1);   
+                            resolve("DONE,"+dir+","+url+","+list_num);
                         }
-                    });
-                    list_num++;
-                    if(list_num>total_list_num){
-                        console.log("All list crawled:"+list_num);   
+                        else{
+                            //init(list_num);
+                            resolve("NEXTLIST,"+dir+","+keys[index-1]+","+list_num);
+                        }
                     }
                     else{
-                        init(list_num);
+                        resolve("NEXTURL,"+dir+","+keys[index]+","+list_num);
+
                     }
+
                 }
             }
-            else{
-                console.log(`stderr:[${stderr}]`);
-                fs.appendFile(`${__dirname}/logs/err_`+date+`.log`,'['+keys[index]+']\n'+stderr+'\n',function(err){
-                    if(err){
-                        fs.writeFile(`${__dirname}/logs/err_`+date+`.log`,"5.start:"+err,function(){});
-                    }
-                });
-            }
-        }
+        });
+
 
     });
+
+    callCrawler.then(function(value){
+        console.log(value);
+        var next_list,toDir,current_url,listnum;
+        var parts = value.split(",");
+        next_list = parts[0];
+        toDir = parts[1];
+        current_url = parts[2];
+        listnum = parts[3];
+        if(next_list=="NEXTURL"){//next url
+            real_index=index+1;
+            console.log("["+listnum+"] ["+real_index+"] Start crawling "+current_url);
+            start(toDir,current_url);
+        }
+        else if(next_list=="AGAIN"){//url again
+                console.log("Again crawling after 30s..."+current_url);
+                setTimeout(function(){
+                    date_start = new Date();
+                    start(toDir,current_url);
+                },10*1000);
+
+        }
+        else if(next_list=="NEXTLIST"){//next list
+            console.log("Next_list:"+next_list);
+            init(listnum);
+        }
+        else{
+            console.log("DONE");
+        }
+    }).catch(function(error){
+        var date = dateFormat(new Date(), "yyyymmdd");
+        console.log(error);
+        fs.appendFile(`${__dirname}/logs/err_`+date+`.log`,"promise error:"+error+"\n",function(){});
+    });
+    //});
 }
 
 

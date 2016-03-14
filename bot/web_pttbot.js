@@ -8,6 +8,9 @@ var S = require('string');
 var he = require('he');
 var sleep = require('sleep');
 
+var stop_flag1=0;
+
+
 function checklist(body,page,callback){
     var i=0;
     var value=1;
@@ -38,7 +41,7 @@ function checklist(body,page,callback){
     }
 }
 
-function start(lastdate,current_page,citem,body,board,page,owner,timeper,callback){
+function start(s_links,r_links,lastdate,current_page,citem,body,board,page,owner,timeper,callback){
 
     var i;
     var status="";
@@ -46,6 +49,7 @@ function start(lastdate,current_page,citem,body,board,page,owner,timeper,callbac
     var article_link = new Array();
     var article_text = new Array();
     endpage = parseInt(page);
+    stop_flag1=0;
     var cnt=0;
     //get all list a and grab the web
     try{
@@ -89,51 +93,73 @@ function start(lastdate,current_page,citem,body,board,page,owner,timeper,callbac
             }
             */
             var lastpost="";
+
             var terid = setInterval(function(){
-                text = article_text[linc];
-                href = article_link[linc];
-                //console.log("page:"+current_page+" linc:"+linc+" article_link:"+article_link[linc]+" temp_cnt:"+temp_cnt);
-                if(linc==-1){
-                   clearInterval(terid);
-                }
-                else if(typeof article_link[linc]=="undefined"){
-                    //console.log("linc:"+linc+" article_link.length:"+article_link.length);
-                    
-                    //console.log("article_link["+linc+"]=\"undefined\"");
-                    //linc--;
-                    temp_cnt++;
-                    if(temp_cnt>=article_link.length){
-                        clearInterval(terid);
-                    }
-                }
-                else{
-                    if(lastpost==""){
-                        lastpost = linc;
-                    }
-                    look(lastpost,0,lastdate,href,text,"0",board,owner,linc,article_link.length,current_page,endpage,function(reach,temp_owner,temp_board,temp_current_page,temp_linc,temp_linc_length,temp_href){
-                        if(reach==1){
+                if(stop_flag1==0){
+                    text = article_text[linc];
+                    href = article_link[linc];
+                    //console.log("page:"+current_page+" linc:"+linc+" article_link:"+article_link[linc]+" temp_cnt:"+temp_cnt);
+                    if(linc==-1){
+                        //console.log("["+board+"]["+current_page+"] s_links:"+s_links+" r_links:"+r_links);
+                        if(s_links==r_links){
                             clearInterval(terid);
-                            callback(temp_linc_length,reach);
+                            callback(0,1);
                             return;
                         }
-                        else{
-                            fs.appendFile('./ptt_data/'+temp_owner+'/'+temp_board+'/articlelist.txt',"["+temp_current_page+"] "+temp_linc+" grap[:"+temp_board+"] href:"+temp_href+"\n");
-                        }
-                    });
-                    //linc--;
-                    temp_cnt++;
-                    /*
-                    if(linc>=article_link.length){
-                        clearInterval(terid);
+                            
                     }
-                    */
+                    else if(typeof article_link[linc]=="undefined"){
+                        //console.log("linc:"+linc+" article_link.length:"+article_link.length);
+
+                        //console.log("article_link["+linc+"]=\"undefined\"");
+                        //linc--;
+                        temp_cnt++;
+                        if(temp_cnt>=article_link.length){
+                            clearInterval(terid);
+                        }
+                    }
+                    else{
+                        if(lastpost==""){
+                            lastpost = linc;
+                        }
+                        //console.log("["+board+"]["+current_page+"] s_links:"+s_links+" r_links:"+r_links);
+                        s_links++;
+                        look(lastpost,0,lastdate,href,text,"0",board,owner,linc,article_link.length,current_page,endpage,function(reach,temp_owner,temp_board,temp_current_page,temp_linc,temp_linc_length,temp_href){
+                            r_links++;
+                            if(reach==1){
+                                stop_flag1=reach;
+                                //clearInterval(terid);
+                                //callback(temp_linc_length,reach);
+                                //return;
+                            }
+                            else{
+                                fs.appendFile('./ptt_data/'+temp_owner+'/'+temp_board+'/articlelist.txt',"["+temp_current_page+"] "+temp_linc+" grap[:"+temp_board+"] href:"+temp_href+"\n");
+                            }
+                        });
+                        //linc--;
+                        temp_cnt++;
+                        /*
+                           if(linc>=article_link.length){
+                           clearInterval(terid);
+                           }
+                           */
+                    }
+                    linc--;
+
                 }
-                linc--;
+                else if(stop_flag1==1&&s_links==r_links){
+                    //console.log("stop_flag1:"+stop_flag1);
+                    callback(0,stop_flag1);
+                    clearInterval(terid);
+                    return;
+                }
+
             },timeper);
-            callback(article_link.length,0);
+            //callback(article_link.length,0);
         }
         else{
-            callback(0,0); 
+            start(lastdate,current_page,citem,body,board,page,owner,timeper,callback);
+            //callback(0,-1); 
         }
     }
 }
@@ -145,8 +171,10 @@ function look(lastpost,check,lastdate,href,text,value,board,owner,linc,linc_leng
     var web="https://www.ptt.cc";
     var url = web+href;
     var date;
-    //var againTime = (10000*linc)+1000;
     var againTime = 2000;
+    if(linc==lastpost){
+        againTime = 1;
+    }
     request({
         uri:url,
         headers:{                                                                                                                                'Cookie': 'over18=1'
@@ -203,9 +231,6 @@ function look(lastpost,check,lastdate,href,text,value,board,owner,linc,linc_leng
                 fin(reach,temp_owner,temp_board,temp_current_page,temp_linc,temp_linc_length,temp_url);
                 return;
             });
-            return 200;
         }
     });
-    return 503;
-
 }
