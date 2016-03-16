@@ -11,11 +11,19 @@ var deletetag = require('./deleteTag');
 
 var HashMap = require('hashmap');
 var reach_board = new HashMap();
+var crawled_link = new HashMap();
 
 var old_date="";
 var p_board="";
+var stop_page=0;
 function convert(lastpost,lastdate,title,body,board,url,owner,linc,linc_length,current_page,end_page,fin){
-
+    /*
+    if(current_page<stop_page){
+        console.log("current_page:"+current_page+" is smaller then stop_page:"+stop_page);
+        fin(2,owner,board,current_page,linc,linc_length,url);
+        return;
+    }
+    */
     var date = dateFormat(new Date(), "yyyymmdd");
     var record="";
     if(date!=old_date&&p_board!=board){
@@ -100,7 +108,7 @@ function toGais(lastpost,lastdate,record,content,date,owner,board,linc,linc_leng
         }
         //record last timestamp
         
-        //console.log("==>linc:"+linc+" linc_length:"+linc_length+" current_page:"+current_page+" end_page:"+end_page);
+
         if(linc==lastpost&&(current_page==end_page||current_page=="")){
             if(time!=0){
                 fs.writeFile('./ptt_data/'+owner+'/'+board+'/lastdate.txt',time);
@@ -108,8 +116,8 @@ function toGais(lastpost,lastdate,record,content,date,owner,board,linc,linc_leng
             }
             else{
                 var time2 = new Date();
-                time = time2;                                                                                                                          fs.writeFile('./ptt_data/'+owner+'/'+board+'/lastdate.txt',time2);
-
+                time = time2;
+                fs.writeFile('./ptt_data/'+owner+'/'+board+'/lastdate.txt',time2);
             }
         }
         var s_lastdate=0,s_time=0;
@@ -131,8 +139,11 @@ function toGais(lastpost,lastdate,record,content,date,owner,board,linc,linc_leng
         }
 
         var interval = s_lastdate - s_time;
-        //console.log("new date:"+temp_time+" lastdate:"+lastdate);
-        if(time!=0&&temp_time<=lastdate&&lastdate!=0&&interval>=0){//special case https://www.ptt.cc/bbs/Gossiping/M.1447840600.A.074.html
+        //console.log("time:"+time+" new date:"+temp_time+" lastdate:"+lastdate+" interval:"+interval);
+        //console.log("==>linc:"+linc+" linc_length:"+linc_length+" current_page:"+current_page+" end_page:"+end_page);
+        if(time!=0&&temp_time.toString()==lastdate.toString()&&lastdate!=0&&interval>=0){//special case https://www.ptt.cc/bbs/Gossiping/M.1447840600.A.074.html
+
+            
             if(reach_board.get(board)!=1){
                 reach_board.set(board,1);
                 console.log("["+board+"]"+temp_time+" reach to or smaller then lastdate:"+lastdate);
@@ -140,14 +151,29 @@ function toGais(lastpost,lastdate,record,content,date,owner,board,linc,linc_leng
                 record +="@time:"+temp_time+"\n";
                 record += "@body:"+result+"\n";
 
-                fs.appendFile("./ptt_data/"+owner+"/"+board+"/"+date+"_stop",record,function(){
+                fs.writeFile("./ptt_data/"+owner+"/"+board+"/"+date+"_stop",record,function(){
                 });
+                fin("STOP_PAGE");
             }
             else{
                 console.log("has reached lastdate:"+board);
+                fin("STOP_LINK");
             }
-            fin(1);
+            stop_page=current_page;
+        }
+        else if(time!=0&&temp_time<lastdate&&lastdate!=0&&interval>=0){
+            console.log("current_page:"+current_page+" is smaller then lastdate:"+lastdate);
+            fin("OVER_STOP_PAGE");
+        }
+        else if(lastdate==0&&linc==0){
+            console.log("["+board+"] first crawled to the end=>linc:"+linc);
+            result = he.decode(resulttemp);
+            record +="@time:"+temp_time+"\n";
+            record += "@body:"+result+"\n";
 
+            fs.appendFile("./ptt_data/"+owner+"/"+board+"/"+date,record,function(){
+            });
+            fin("END");
         }
         else{
             //console.log(time+" is bigger then lastdate:"+lastdate);
