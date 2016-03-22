@@ -58,7 +58,7 @@ function start(dir,url){
             if(result=='503'||result=='false'){
                 var date = dateFormat(new Date(), "yyyymmdd");
                 //index--;
-                console.log(url+" will be crawled after 1 minutes");
+                console.log(url+" will be crawled after 0.5 minutes");
                 fs.appendFile(`${__dirname}/logs/again_`+date+`.log`,url+" will be crawled after 1 minutes\n",function(err){
                     if(err){
                         fs.appendFile(`${__dirname}/logs/err_`+date+`.log`,"1.start:"+err,function(){});
@@ -86,8 +86,8 @@ function start(dir,url){
                     real_index=index;
                     if(index<values.length){
                         if(index==values.length){
-                            let num1 = real_index-1;
-                            let num2 = list_num-1;
+                            let num1 = real_index;
+                            let num2 = list_num;
                             console.log("1.["+num2+"]All boards crawled:"+num1);
                             //console.log("1.["+list_num+"]All boards crawled:"+real_index);
                             fs.appendFile(`${__dirname}/logs/ok_list_`+date+`.log`,'['+num2+']\n'+"All boards crawled:"+num1+"\n",function(err){
@@ -120,8 +120,8 @@ function start(dir,url){
                         }
                     }
                     else if(index==values.length){
-                        let num1 = real_index-1;
-                        let num2 = list_num-1;
+                        let num1 = real_index;
+                        let num2 = list_num;
                         console.log("2.["+num2+"]All boards crawled:"+num1);
                         fs.appendFile(`${__dirname}/logs/ok_list_`+date+`.log`,'['+num2+']\n'+"All boards crawled:"+num1+"\n",function(err){
                             if(err){
@@ -152,9 +152,6 @@ function start(dir,url){
                         real_index=index;
                     }
                     if(index==values.length){
-                        //console.log("total_list_num:"+total_list_num);
-                        let num1 = real_index-1;
-                        let num2 = list_num-1;
                         console.log("3.["+num2+"]All boards crawled:"+num1);
                         fs.appendFile(`${__dirname}/logs/ok_list_`+date+`.log`,'['+num2+']\n'+"All boards crawled:"+num1+"\n",function(err){
                             if(err){
@@ -193,9 +190,15 @@ function start(dir,url){
         current_url = parts[2];
         listnum = parts[3];
         if(next_list=="NEXTURL"){//next url
-            real_index=index+1;
-            console.log("["+listnum+"] ["+real_index+"] Start crawling "+current_url);
-            start(toDir,current_url);
+            if(current_url==""){
+                console.log("NO url.");
+            }
+            else{
+                real_index=index+1;
+                console.log("["+listnum+"] ["+real_index+"] Start crawling "+current_url);
+                start(toDir,current_url);
+            }
+
         }
         else if(next_list=="AGAIN"){//url again
                 console.log("Again crawling after 30s..."+current_url);
@@ -206,10 +209,14 @@ function start(dir,url){
 
         }
         else if(next_list=="NEXTLIST"){//next list
-            console.log("Next_list:"+next_list+" will start after 1 minutes...");
+            console.log("Next_list:"+next_list+" will start");
+            init(listnum);
+            //console.log("Next_list:"+next_list+" will start after 1 minutes...");
+            /*
             setTimeout(function(){
                 init(listnum);
             },1*60*1000);
+            */
 
         }
         else{
