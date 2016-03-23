@@ -150,7 +150,7 @@ function toGais(lastpost,lastdate,record,content,date,owner,board,linc,linc_leng
         var interval = s_lastdate - s_time;
         //console.log("time:"+time+" new date:"+temp_time+" lastdate:"+lastdate+" interval:"+interval);
         //console.log("==>linc:"+linc+" linc_length:"+linc_length+" current_page:"+current_page+" end_page:"+end_page);
-        if(temp_time<=lastdate_temp&&lastdate!=0&&interval>=0){//special case https://www.ptt.cc/bbs/Gossiping/M.1447840600.A.074.html
+        if(temp_time<lastdate_temp&&lastdate!=0&&interval>=0){//special case https://www.ptt.cc/bbs/Gossiping/M.1447840600.A.074.html
             if(reach_board.get(board)!=1){
                 reach_board.set(board,1);
                 console.log("["+board+"]"+temp_time+" reach to or smaller then lastdate:"+lastdate);

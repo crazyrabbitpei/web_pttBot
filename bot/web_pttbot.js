@@ -10,7 +10,7 @@ var sleep = require('sleep');
 
 var HashMap = require('hashmap');
 
-
+var maxRetry = 50;
 var stop_flag1=0;
 var stop_page=0;
 var ok_page=0;
@@ -61,7 +61,7 @@ function start(lastindex,s_pages,s_links,r_links,lastdate,current_page,citem,bod
         stop_page=0;
     }
     */
-    var i;
+    var i=0;
     var status="";
     var value=1;
     var article_link = new Array();
@@ -101,7 +101,7 @@ function start(lastindex,s_pages,s_links,r_links,lastdate,current_page,citem,bod
                 if(typeof article_link[i]==="undefined"){
                     page_link.set(i,"1");
                 }
-                else if(current_page==lastindex&&i<citem){
+                else if(current_page==lastindex&&i<=citem&&lastdate!=0){
                     page_link.set(i,"1");
                 }
                 else{
@@ -140,25 +140,29 @@ function start(lastindex,s_pages,s_links,r_links,lastdate,current_page,citem,bod
                         }
 
                         s_links++;
-                        look(lastpost,0,lastdate,href,text,"0",board,owner,linc,article_link.length,current_page,endpage,function(reach,temp_owner,temp_board,temp_current_page,temp_linc,temp_linc_length,temp_href){
+                        look(0,lastpost,0,lastdate,href,text,"0",board,owner,linc,article_link.length,current_page,endpage,function(reach,temp_owner,temp_board,temp_current_page,temp_linc,temp_linc_length,temp_href){
                             page_link.set(temp_linc,"1");
                             var links_ncrawled=0;
-
-                            for(i=0;i<page_link.values().length;i++){
-                                if(page_link.values()[i]=="-1"){
+                            var j;
+                            for(j=0;j<page_link.values().length;j++){
+                                if(page_link.values()[j]=="-1"){
                                     links_ncrawled++;
                                 }
                             }
                             r_links++;
                             console.log("["+board+"]["+current_page+"] links not crawled:"+links_ncrawled);    
                             //console.log("reach:"+reach+" ["+board+"]["+current_page+"] s_links:"+s_links+" r_links:"+r_links);
-                            if(reach=="STOP_PAGE"||reach=="STOP_LINK"||reach=="END"){
-                                //bottom = citem;
-                                //console.log("reach stop page:"+temp_current_page+" citem:"+bottom);
-                                //stop_page=temp_current_page;
-                                clearInterval(terid);
-                                //callback(reach,temp_current_page);
+                            if(lastdate!=0){
+                                if(reach=="STOP_PAGE"){
+                                    callback("STOP",temp_current_page);
+                                    clearInterval(terid);
+                                }
+                                else if(reach=="STOP_LINK"){
+                                    callback("STOP",temp_current_page);
+                                    clearInterval(terid);
+                                }
                             }
+
                             if(lastdate==0){
                                 fs.appendFile('./ptt_data/'+temp_owner+'/'+temp_board+'/articlelist.txt',"["+temp_current_page+"] "+temp_linc+" grap[:"+temp_board+"] href:"+temp_href+"\n");
                             }
@@ -201,7 +205,7 @@ function start(lastindex,s_pages,s_links,r_links,lastdate,current_page,citem,bod
 
                 //}
 
-            },timeper);
+            },500);
         }
         else{
             start(s_links,r_links,lastdate,current_page,citem,body,board,page,owner,timeper,callback);
@@ -212,70 +216,90 @@ exports.checklist=checklist;
 exports.start = start;
 
 
-function look(lastpost,check,lastdate,href,text,value,board,owner,linc,linc_length,current_page,end_page,fin){
+function look(retryc,lastpost,check,lastdate,href,text,value,board,owner,linc,linc_length,current_page,end_page,fin){
     var web="https://www.ptt.cc";
     var url = web+href;
     var date;
-    var againTime = 10000;
-    /*
-    if(linc==lastpost){
-        againTime = 1;
-    }
-    */
+    var againTime = 20000;
     request({
         uri:url,
         headers:{                                                                                                                                'Cookie': 'over18=1'
         },
-        timeout:100000,
+        timeout:12000,
+        pool:{
+            maxSockets:Infinity
+        }
     },function(error,response,body){
         if(error){
-            console.log("error:"+error);
-            setTimeout(
-                function(){
-                    date = new Date();
-                    //fs.appendFile('./ptt_data/'+owner+'/'+board+'/tryagain_link',"t:["+date+"]"+href+"\n");
-                    look(lastpost,check+1,lastdate,href,text,"503",board,owner,linc,linc_length,current_page,end_page,fin);
-                },
-                againTime
-            )
-        }
-        else{
-            if(typeof response === "undefined"){
-                console.log("error:response undefined");
-                //if(check<30){
+            console.log("2.["+board+"]["+current_page+"]["+linc+"]error:"+error.code+" connection timeout:"+error.connect);
+            retryc++;
+            if(retryc>maxRetry){
+                fs.appendFile("./logs/retry.false","["+board+"]["+current_page+"]["+linc+"] href:"+url,function(){});
+                fin(0,owner,board,current_page,linc,linc_length,url);
+                return;
+            }
+            else{
                 setTimeout(
                     function(){
                         date = new Date();
                         //fs.appendFile('./ptt_data/'+owner+'/'+board+'/tryagain_link',"t:["+date+"]"+href+"\n");
-                        look(lastpost,check+1,lastdate,href,text,"503",board,owner,linc,linc_length,current_page,end_page,fin);
+                        look(retryc,lastpost,check+1,lastdate,href,text,"503",board,owner,linc,linc_length,current_page,end_page,fin);
                     },
                     againTime
                 )
-                //}
+            }
+
+        }
+        else{
+            if(typeof response === "undefined"){
+                console.log("2.["+board+"]["+current_page+"]["+linc+"]error:response undefined");
+                retryc++;
+                if(retryc>maxRetry){
+                    fs.appendFile("./logs/retry.false","["+board+"]["+current_page+"]["+linc+"] href:"+url,function(){});
+                    fin(0,owner,board,current_page,linc,linc_length,url);
+                    return;
+                }
+                else{
+                    setTimeout(
+                        function(){
+
+                            date = new Date();
+                            //fs.appendFile('./ptt_data/'+owner+'/'+board+'/tryagain_link',"t:["+date+"]"+href+"\n");
+                            look(retryc,lastpost,check+1,lastdate,href,text,"503",board,owner,linc,linc_length,current_page,end_page,fin);
+                        },
+                        againTime
+                    )
+                }
             }
             else if(response.statusCode!==200){
-                console.log("error:response.statusCode:"+response.statusCode);
+                //console.log("error:response.statusCode:"+response.statusCode);
                 if(response.statusCode===404){
                     fin(0,owner,board,current_page,linc,linc_length,url);
                     return;
                 }
                 else if(response.statusCode===503){
+                    retryc++;
                     if(value=="503"){
                         //fs.appendFile('./ptt_data/log_web_article.txt', "\trepetenotok["+num+"]bot response:"+response.statusCode+'\n'+"\ttext:"+text+"\n"+"\thref:"+web+href+"\n");
                     }
                     else{
                         //fs.appendFile('./ptt_data/'+board+'/log_web_article.txt', "\trepeteb["+num+"]bot response:"+response.statusCode+'\n'+"\ttext:"+text+"\n"+"\thref:"+web+href+"\n");
                     }
-                    //if(check<30){
-                    setTimeout(
-                        function(){
-                            date = new Date();
-                            //fs.appendFile('./ptt_data/'+owner+'/'+board+'/tryagain_link',"t:["+date+"]"+href+"\n");
-                            look(lastpost,check+1,lastdate,href,text,"503",board,owner,linc,linc_length,current_page,end_page,fin);
-                        },
-                        againTime
-                    )
-                    //}
+                    if(retryc>maxRetry){
+                        fs.appendFile("./logs/retry.false","["+board+"]["+current_page+"]["+linc+"] href:"+url,function(){});
+                        fin(0,owner,board,current_page,linc,linc_length,url);
+                        return;
+                    }
+                    else{
+                        setTimeout(
+                            function(){
+                                date = new Date();
+                                //fs.appendFile('./ptt_data/'+owner+'/'+board+'/tryagain_link',"t:["+date+"]"+href+"\n");
+                                look(retryc,lastpost,check+1,lastdate,href,text,"503",board,owner,linc,linc_length,current_page,end_page,fin);
+                            },
+                            againTime
+                        )
+                    }
                 }
                 else{
                     //fs.appendFile('./ptt_data/log_web_article.txt', "\trepetenotok["+num+"]bot response:"+response.statusCode+'\n'+"\ttext:"+text+"\n"+"\thref:"+web+href+"\n");
