@@ -129,6 +129,9 @@ function start(lastindex,s_pages,s_links,r_links,lastdate,current_page,citem,bod
                             clearInterval(terid);
                     }
                     if(typeof article_link[linc]==="undefined"){
+                        if((article_link.length-1)==linc&&current_page==page){
+                            var time2 = new Date();                                                                                                    fs.writeFile('./ptt_data/'+owner+'/'+board+'/lastdate.txt',time2);
+                        }
                         fs.appendFile("./ptt_data/"+owner+"/"+board+"/404.link","page:"+current_page+" linc:"+linc+"\n--\n",function(){
                         });
                         //console.log("article_link["+linc+"]=undefined");
@@ -150,8 +153,8 @@ function start(lastindex,s_pages,s_links,r_links,lastdate,current_page,citem,bod
                                 }
                             }
                             r_links++;
-                            console.log("["+board+"]["+current_page+"] links not crawled:"+links_ncrawled);    
-                            //console.log("reach:"+reach+" ["+board+"]["+current_page+"] s_links:"+s_links+" r_links:"+r_links);
+                            //console.log("["+board+"]["+current_page+"] links not crawled:"+links_ncrawled);    
+                            
                             if(lastdate!=0){
                                 if(reach=="STOP_PAGE"){
                                     callback("STOP",temp_current_page);
@@ -169,32 +172,33 @@ function start(lastindex,s_pages,s_links,r_links,lastdate,current_page,citem,bod
                             else if(lastdate!=0&&reach!="END"&&reach!="STOP_PAGE"&&reach!="STOP_LINK"){
                                 fs.appendFile('./ptt_data/'+temp_owner+'/'+temp_board+'/articlelist.txt',"["+temp_current_page+"] "+temp_linc+" grap[:"+temp_board+"] href:"+temp_href+"\n");
                             }
-                            if(reach=="END"||reach=="STOP_PAGE"||reach==0||reach=="STOP_LINK"){
+                            if(reach=="END"||reach=="STOP_PAGE"||reach=="STOP_LINK"){
                                 if(lastdate==0){
-                                    if(links_ncrawled==0){
+                                    if(links_ncrawled<=5){
                                         console.log("1.--DONE["+board+"]["+temp_current_page+"] s_links:"+s_links+" r_links:"+r_links);
                                         ok_page++;
                                         //console.log("["+temp_current_page+"]ok page num:"+ok_page);
                                         callback(reach,temp_current_page);
-                                        clearInterval(terid);
-                                        return;
+                                        //clearInterval(terid);
+                                        //return;
 
                                     }
                                 }
-                                if(links_ncrawled==0){
+                                else{
+                                //if(links_ncrawled<=5){
                                     console.log("2.--DONE["+board+"]["+temp_current_page+"] s_links:"+s_links+" r_links:"+r_links);
                                     ok_page++;
                                     //console.log("["+temp_current_page+"]ok page num:"+ok_page);
                                     callback(reach,temp_current_page);
-                                    clearInterval(terid);
-                                    return;
+                                    //clearInterval(terid);
+                                    //return;
 
                                 }
 
                             }
-                            else{
+                            else if(reach!=0){
                                 console.log("reach:"+reach);
-                                fs.appendFile("./stop.record","["+board+"]["+temp_current_page+"] reach:"+reach+"\n",function(){});
+                                //fs.appendFile("./stop.record","["+board+"]["+temp_current_page+"] reach:"+reach+"\n",function(){});
                                 callback("TEST");
                             }
                         });
@@ -231,7 +235,7 @@ function look(retryc,lastpost,check,lastdate,href,text,value,board,owner,linc,li
         }
     },function(error,response,body){
         if(error){
-            console.log("2.["+board+"]["+current_page+"]["+linc+"]error:"+error.code+" connection timeout:"+error.connect);
+            //console.log("2.["+board+"]["+current_page+"]["+linc+"]error:"+error.code+" connection timeout:"+error.connect);
             retryc++;
             if(retryc>maxRetry){
                 fs.appendFile("./logs/retry.false","["+board+"]["+current_page+"]["+linc+"] href:"+url,function(){});
@@ -252,7 +256,7 @@ function look(retryc,lastpost,check,lastdate,href,text,value,board,owner,linc,li
         }
         else{
             if(typeof response === "undefined"){
-                console.log("2.["+board+"]["+current_page+"]["+linc+"]error:response undefined");
+                //console.log("2.["+board+"]["+current_page+"]["+linc+"]error:response undefined");
                 retryc++;
                 if(retryc>maxRetry){
                     fs.appendFile("./logs/retry.false","["+board+"]["+current_page+"]["+linc+"] href:"+url,function(){});

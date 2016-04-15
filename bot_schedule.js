@@ -55,6 +55,7 @@ function start(dir,url){
     //const child = exec(`/bin/bash -c node ${__dirname}/client_bot.js `+toDir+' '+url,(error,stdout,stderr) => {
     var callCrawler = new Promise(function(resolve,reject){
         client_bot.start(url,dir,function(result){
+            console.log("Back:"+result);
             if(result=='503'||result=='false'){
                 var date = dateFormat(new Date(), "yyyymmdd");
                 //index--;
@@ -143,9 +144,9 @@ function start(dir,url){
                     }
                 }
                 else{
-                    real_index=index+1;
-                    let num1 = real_index-1;
-                    let num2 = list_num-1;
+                    real_index=index;
+                    let num1 = real_index;
+                    let num2 = list_num;
                     console.log("3.["+num2+"]["+num1+"]has cralwed => result:"+result);
                     if(result=="404"){
                         index++;
@@ -165,7 +166,6 @@ function start(dir,url){
                             resolve("DONE,"+dir+","+url+","+num);
                         }
                         else{
-                            //init(list_num);
                             resolve("NEXTLIST,"+dir+","+keys[index-1]+","+list_num);
                         }
                     }
